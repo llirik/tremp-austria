@@ -32,15 +32,26 @@ beforeAll(async () => {
 		grant usage on schema auth to anon, authenticated;
 		grant execute on function auth.uid() to anon, authenticated;
 	`);
-	const migrations = import.meta.glob<string>('../../../supabase/migrations/*.sql', { query: '?raw', import: 'default', eager: true });
+	const migrations = import.meta.glob<string>('../../../supabase/migrations/*.sql', {
+		query: '?raw',
+		import: 'default',
+		eager: true
+	});
 	for (const name of Object.keys(migrations).sort()) {
 		await db.exec(migrations[name]);
 	}
 	await db.query('insert into auth.users (id) values ($1)', [userId]);
-	await authenticated((tx) => tx.query('insert into public.profiles (id, display_name) values ($1, $2)', [userId, 'דנה']));
+	await authenticated((tx) =>
+		tx.query("select public.accept_legal_documents('2026-09-09', '2026-09-09')")
+	);
+	await authenticated((tx) =>
+		tx.query('insert into public.profiles (id, display_name) values ($1, $2)', [userId, 'דנה'])
+	);
 }, 15000);
 
-afterAll(async () => { await db.close(); });
+afterAll(async () => {
+	await db.close();
+});
 
 describe('validated form values satisfy the real PostgreSQL schema', () => {
 	it.each([
@@ -50,30 +61,56 @@ describe('validated form values satisfy the real PostgreSQL schema', () => {
 	])('saves normalized $method contact under owner RLS', async ({ method, value }) => {
 		const parsed = parseProfile(form({ display_name: 'דנה', method, value }));
 		if ('error' in parsed) throw new Error(parsed.error);
-		const saved = await authenticated((tx) => tx.query<{ method: string; value: string }>(`
+		const saved = await authenticated((tx) =>
+			tx.query<{ method: string; value: string }>(
+				`
 			insert into public.private_contacts (user_id, method, value) values ($1, $2, $3)
 			on conflict (user_id) do update set method = excluded.method, value = excluded.value
 			returning method, value
-		`, [userId, parsed.contact.method, parsed.contact.value]));
+		`,
+				[userId, parsed.contact.method, parsed.contact.value]
+			)
+		);
 		expect(saved.rows[0]).toEqual(parsed.contact);
 	});
 
-	it.each(['driver', 'passenger', 'taxi'])('saves parsed %s listing under owner RLS', async (ride_type) => {
-		const parsed = parseRide(form({
-			ride_type, direction: 'vienna_to_bts', departure_date: addDays(localDate(), 2), departure_time: '10:30',
-			flexibility_minutes: ride_type === 'taxi' ? 'flexible' : '30', passenger_count: '2', available_seats: '3',
-			origin_area: 'מרכז וינה', destination_area: 'שדה התעופה ברטיסלבה', flight_number: 'W6 1234',
-			note: 'יש מקום למזוודה.\nניפגש באזור התחנה.'
-		}));
-		if (!parsed.data) throw new Error(parsed.error);
-		const input = parsed.data;
-		// Column names come from the parser's typed object, never from raw form keys.
-		const columns = Object.keys(input);
-		const placeholders = columns.map((_, index) => `$${index + 1}`);
-		const saved = await authenticated((tx) => tx.query<{ ride_type: string; note: string; flexibility_minutes: number | null }>(`
+	it.each(['driver', 'passenger', 'taxi'])(
+		'saves parsed %s listing under owner RLS',
+		async (ride_type) => {
+			const parsed = parseRide(
+				form({
+					ride_type,
+					direction: 'vienna_to_bts',
+					departure_date: addDays(localDate(), 2),
+					departure_time: '10:30',
+					flexibility_minutes: ride_type === 'taxi' ? 'flexible' : '30',
+					passenger_count: '2',
+					available_seats: '3',
+					origin_area: 'מרכז וינה',
+					destination_area: 'שדה התעופה ברטיסלבה',
+					flight_number: 'W6 1234',
+					note: 'יש מקום למזוודה.\nניפגש באזור התחנה.'
+				})
+			);
+			if (!parsed.data) throw new Error(parsed.error);
+			const input = parsed.data;
+			// Column names come from the parser's typed object, never from raw form keys.
+			const columns = Object.keys(input);
+			const placeholders = columns.map((_, index) => `$${index + 1}`);
+			const saved = await authenticated((tx) =>
+				tx.query<{ ride_type: string; note: string; flexibility_minutes: number | null }>(
+					`
 			insert into public.rides (${columns.join(',')}) values (${placeholders.join(',')})
 			returning ride_type, note, flexibility_minutes
-		`, Object.values(input)));
-		expect(saved.rows[0]).toEqual({ ride_type, note: input.note, flexibility_minutes: input.flexibility_minutes });
-	});
+		`,
+					Object.values(input)
+				)
+			);
+			expect(saved.rows[0]).toEqual({
+				ride_type,
+				note: input.note,
+				flexibility_minutes: input.flexibility_minutes
+			});
+		}
+	);
 });
