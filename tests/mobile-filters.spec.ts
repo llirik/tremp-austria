@@ -62,7 +62,25 @@ async function expectNativeDateToFit(page: Page, input: Locator) {
 		)!;
 		expect(picker).toBeDefined();
 		const textNodes = descendants(editor).filter((node) => node.nodeName === '#text');
-		expect(textNodes.map((node) => node.nodeValue)).toEqual(['09', '/', '10', '/', '2026']);
+		// Native field order can follow the OS locale despite Playwright's en-GB locale.
+		// Verify each semantic field and every displayed glyph without forcing its order.
+		for (const [field, expected] of [
+			['day', '09'],
+			['month', '10'],
+			['year', '2026']
+		]) {
+			const fields = descendants(editor).filter((node) =>
+				node.attributes?.includes(`-webkit-datetime-edit-${field}-field`)
+			);
+			expect(fields, `native ${field} field`).toHaveLength(1);
+			expect(
+				descendants(fields[0])
+					.filter((node) => node.nodeName === '#text')
+					.map((node) => node.nodeValue),
+				`native ${field} value`
+			).toEqual([expected]);
+		}
+		expect(textNodes.map((node) => node.nodeValue).sort()).toEqual(['/', '/', '09', '10', '2026']);
 
 		async function box(node: NativeNode, edge: 'content' | 'border' = 'border') {
 			const { model } = (await session.send('DOM.getBoxModel', { nodeId: node.nodeId })) as {
