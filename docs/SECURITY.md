@@ -21,6 +21,6 @@ See [the database documentation](../supabase/README.md) and run `pnpm test:db` f
 
 Before wider use, supply the actual operator identity and a monitored privacy/support contact in the privacy page, and establish a process for access, deletion and abuse requests. No operator identity, business address or private contact channel is assumed by this repository.
 
-Verify custom SMTP delivery, protect hosting and Supabase accounts, review provider logs and retention settings, and monitor abuse and capacity. Public-text checks and per-account limits reduce accidental disclosure and spam; they do not verify identity, driver suitability or transport safety.
+Protect Google Cloud, hosting and Supabase accounts, keep OAuth client secrets in Supabase provider settings, and verify custom SMTP delivery before enabling email sign-in. Review provider logs and retention settings, and monitor abuse and capacity. Public-text checks and per-account limits reduce accidental disclosure and spam; they do not verify identity, driver suitability or transport safety.
 
 Cancelling a listing hides it publicly but preserves accepted contact access. Account deletion currently requires an authorized operator. Information copied or shared outside the app cannot be recalled.

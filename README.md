@@ -6,13 +6,13 @@ This community board does not provide transport, employ drivers, arrange payment
 
 **App:** [tremp-austria.vercel.app](https://tremp-austria.vercel.app) · **Source:** [llirik/tremp-austria](https://github.com/llirik/tremp-austria) · **License:** [MIT](LICENSE)
 
-**Deployment status:** the app is deployed on Vercel, with a healthy Supabase project in Frankfurt and both migrations applied. The hosted authentication backend works. Community email delivery still requires a verified sending domain and custom SMTP: Supabase's default email service only delivers to project team addresses. See [its SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
+**Deployment status:** the app is deployed on Vercel, with a healthy Supabase project in Frankfurt and both migrations applied. Google OAuth is configured as the primary sign-in method. Email sign-in is disabled in production until a verified sending domain and custom SMTP are available: Supabase's default email service only delivers to project team addresses. See [its SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ## Features
 
 - Public browsing, direction/date/type filters, stable `/ride/<id>` links and Hebrew WhatsApp sharing.
 - **יש לי מקום** — spare seats; **מחפש טרמפ** — looking for a ride; **שותפים למונית** — sharing a taxi.
-- Email magic-link authentication when creating listings or requesting contact. Onboarding asks for a display name and one private contact method: WhatsApp, Telegram or email.
+- Google sign-in and optional email magic links when creating listings or requesting contact. Each method is enabled explicitly after its provider is configured. Onboarding asks for a display name and one private contact method: WhatsApp, Telegram or email.
 - Personal listings, editing, cancellation, received/sent contact requests, acceptance, rejection and revocation.
 - Potential matches based on direction, departure flexibility, listing type and seats.
 - Mobile layouts, Hebrew RTL, Vienna/Bratislava local times and accessible native forms.
@@ -74,14 +74,16 @@ Seed data covers both directions, all listing types, potential matches, full veh
 
 ### Environment
 
-| Variable                          | Purpose                                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------ |
-| `PUBLIC_SUPABASE_URL`             | Local or hosted Supabase API origin                                                  |
-| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key; legacy `PUBLIC_SUPABASE_ANON_KEY` is also supported                 |
-| `PUBLIC_SITE_URL`                 | Canonical app origin; `http://localhost:5173` locally                                |
-| `PUBLIC_DEMO_MODE`                | `false` for real environments; `true` only for an intentional, labeled demonstration |
+| Variable                          | Purpose                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `PUBLIC_SUPABASE_URL`             | Local or hosted Supabase API origin                                                              |
+| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key; legacy `PUBLIC_SUPABASE_ANON_KEY` is also supported                             |
+| `PUBLIC_SITE_URL`                 | Canonical app origin; `http://localhost:5173` locally                                            |
+| `PUBLIC_DEMO_MODE`                | `false` for real environments; `true` only for an intentional, labeled demonstration             |
+| `PUBLIC_GOOGLE_AUTH_ENABLED`      | `true` only after Google OAuth is configured in Google Cloud and Supabase Auth                   |
+| `PUBLIC_EMAIL_AUTH_ENABLED`       | `true` only with working email delivery; defaults to true in development and false in production |
 
-The application never needs a service-role key. Keep database passwords, management tokens and SMTP credentials out of the repository and every `PUBLIC_` variable. `.env` and provider CLI state are ignored by Git.
+The application never needs a service-role key. Keep Google client secrets, database passwords, management tokens and SMTP credentials out of the repository and every `PUBLIC_` variable. `.env` and provider CLI state are ignored by Git. Google client secrets belong only in Supabase's provider settings.
 
 Production does **not** substitute demo data when configuration or database access fails. Keep `PUBLIC_DEMO_MODE=false`; an empty production board means nobody has posted yet.
 
@@ -95,9 +97,9 @@ Either participant can revoke an individual request; another accepted request be
 
 Public fields reject obvious emails, phone-like strings, links and non-whitespace controls. This cannot reliably identify exact addresses or disguised contact details; users should enter approximate areas. Database limits allow 12 rides/hour and 30/day, and 20 contact requests/hour and 50/day per account. Deleting content does not reset the counters.
 
-Sessions use server-managed cookies and Supabase `getUser()` verification. Public page data never serializes an Auth user, email or account UUID. The app includes no analytics or location tracking integration.
+Sessions use server-managed cookies and Supabase `getUser()` verification. Google and email sign-in share a PKCE callback that restricts return paths to this application. Google provides basic identity data to Supabase Auth; the public display name and private contact are chosen separately during onboarding. Public page data never serializes an Auth user, email or account UUID. The app includes no analytics or location tracking integration.
 
-Before wider use, the operator must supply a real operator identity and privacy/support contact in the privacy page, establish deletion and abuse-report processes, and verify SMTP delivery. These details are deliberately not invented.
+Before wider use, the operator must supply a real operator identity and privacy/support contact in the privacy page and establish deletion and abuse-report processes. Verify SMTP delivery before enabling email sign-in. These operator details are deliberately not invented.
 
 ## Matching and lifecycle
 
@@ -124,7 +126,7 @@ pnpm validate   # All five checks above; also runs in GitHub Actions
 
 The database harness applies every migration and the seed to a fresh PostgreSQL engine. It supplies Supabase's Auth role/identity primitives and exercises the actual policies. Its 70 checks cover public projections, impersonation, immutable ownership, consent, revocation, deletion, validation and persistent rate limits. No hosted credentials or Docker daemon are needed.
 
-For browser smoke tests, run `pnpm exec playwright install chromium`, then `pnpm test:e2e`. Visually inspect Hebrew RTL at approximately 390×844, 430×932 and 1440×900 after interface changes. The initial release passes 36 unit tests, 70 database checks and 6 browser tests. A separate two-account browser check against hosted Supabase passed profile creation, listing creation/editing/cancellation, contact request/acceptance/revocation, anonymous privacy and unauthorized-edit checks; its temporary accounts and data were deleted. SMTP magic-link delivery to non-team addresses remains blocked until custom SMTP is configured.
+For browser smoke tests, run `pnpm exec playwright install chromium`, then `pnpm test:e2e`. Visually inspect Hebrew RTL at approximately 390×844, 430×932 and 1440×900 after interface changes. The current release passes 54 unit/integration tests, 70 database checks and 6 browser tests. Seven additional production-mode OAuth checks cover the Google-only layout, PKCE cookies, safe return paths, CSRF rejection, canonical-domain handoff, disabled email and cancelled authorization. A separate two-account browser check against hosted Supabase passed profile creation, listing creation/editing/cancellation, contact request/acceptance/revocation, anonymous privacy and unauthorized-edit checks; its temporary accounts and data were deleted. SMTP magic-link delivery to non-team addresses remains disabled until custom SMTP is configured.
 
 ## Deploying a fork
 
@@ -140,7 +142,11 @@ Never pass `--include-seed` or run the local seed against production. Add future
 
 Import the GitHub repository into Vercel with the SvelteKit preset, Node.js 24, `pnpm install --frozen-lockfile` and `pnpm build`. The adapter is already configured; do not override the static output directory. Set the environment variables above and redeploy after changing them.
 
-Enable Supabase email sign-in, set its Site URL to the canonical app origin, and permit `/auth/callback` redirects including the `next` query string. Configure a verified sender through custom SMTP before inviting community members. Keep SMTP and management credentials in provider settings. Preview deployments should use a separate test backend and an intentionally permitted callback origin.
+Set Supabase Auth's Site URL to the canonical app origin and permit `/auth/callback` redirects including the `next` query string. Preview deployments should use a separate test backend and an intentionally permitted callback origin.
+
+For Google sign-in, create a web OAuth client in a separate Google Cloud project. Its authorized redirect URI is `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` (the Supabase callback), and its authorized JavaScript origin is your app origin. Configure the client ID and secret in Supabase Auth's Google provider, use only basic identity scopes, and make the consent screen available to the intended audience. Then set `PUBLIC_GOOGLE_AUTH_ENABLED=true` and redeploy. See the [Supabase Google provider guide](https://supabase.com/docs/guides/auth/social-login/auth-google).
+
+For optional email sign-in, enable the Supabase email provider and configure a verified sender through custom SMTP before setting `PUBLIC_EMAIL_AUTH_ENABLED=true`. Keep this flag false when delivery is unavailable; Google sign-in does not require SMTP. Keep SMTP and management credentials in provider settings.
 
 Verify anonymous browsing, mobile layout, share links, sign-in, onboarding, listing creation/editing/cancellation and a request/accept/revoke exchange. Also verify that an unrelated third account and an anonymous client cannot retrieve the participants' contacts.
 
