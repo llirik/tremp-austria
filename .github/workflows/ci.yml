@@ -17,5 +17,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate
+      - name: Exclude unused Chrome package source
+        run: |
+          # Playwright downloads its own Chromium. A broken runner Chrome APT
+          # mirror must not block installation of Ubuntu's browser libraries.
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ] && grep -qE 'https?://dl\.google\.com/linux/chrome(-stable)?/deb' "$source"; then
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e

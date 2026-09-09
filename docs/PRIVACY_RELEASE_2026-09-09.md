@@ -32,6 +32,8 @@ The source audit and local/production public-page requests found no application 
 
 Repeat the checks with `pnpm check`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm test:e2e` and `pnpm build`; the GitHub Actions workflow runs these checks on Node.js 24 for each pushed commit. `pnpm test:privacy` runs the real Supabase flow with the environment documented in the README. See [OPERATIONS.md](OPERATIONS.md) for retention job queries and private report review.
 
+The hosted runner's unrelated Google Chrome APT source returned a checksum mismatch on two installation attempts. CI excludes that source before installing Ubuntu browser libraries and Playwright's own Chromium; package verification is not bypassed.
+
 ## Operator follow-through
 
 The published operator is **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austra@gmail.com**. No street or private telephone number is published. Verify that this exact mailbox receives mail, monitor it and review reports regularly in protected Supabase administration. Maintain applicable provider agreement/transfer records and confirm the Austrian legal-notice classification. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records these legal questions; technical checks are not a blanket compliance certification.
