@@ -8,7 +8,8 @@ export default defineConfig({
 	outputDir: 'test-results',
 	use: { baseURL: 'http://127.0.0.1:4173', trace: 'retain-on-failure' },
 	webServer: {
-		command: 'pnpm dev --host 127.0.0.1 --port 4173 --strictPort',
+		command:
+			'pnpm dev --config tests/fixtures/vite.config.ts --host 127.0.0.1 --port 4173 --strictPort',
 		url: 'http://127.0.0.1:4173',
 		reuseExistingServer: false,
 		env: {
@@ -21,22 +22,27 @@ export default defineConfig({
 	projects: [
 		{
 			name: 'mobile-390',
-			testIgnore: '**/mobile-filters.spec.ts',
+			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
 			use: { viewport: { width: 390, height: 844 } }
 		},
 		{
 			name: 'mobile-430',
-			testIgnore: '**/mobile-filters.spec.ts',
+			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
 			use: { viewport: { width: 430, height: 932 } }
 		},
 		{
 			name: 'desktop',
-			testIgnore: '**/mobile-filters.spec.ts',
+			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
 			use: { viewport: { width: 1440, height: 900 } }
 		},
 		{
 			name: 'mobile-filters',
 			testMatch: '**/mobile-filters.spec.ts',
+			use: { isMobile: true, hasTouch: true }
+		},
+		{
+			name: 'account-contact',
+			testMatch: '**/account-contact.spec.ts',
 			use: { isMobile: true, hasTouch: true }
 		}
 	]

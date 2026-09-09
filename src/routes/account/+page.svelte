@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
+	import { tick, untrack } from 'svelte';
 	import { ShieldCheck, LogOut, Plus, Pencil, ArrowUpLeft, Inbox, Check, Trash2 } from '@lucide/svelte';
 	import { localDate } from '$lib/domain';
 	import RideCard from '$lib/components/RideCard.svelte';
@@ -8,9 +9,24 @@
 	import LegalAcceptance from '$lib/components/LegalAcceptance.svelte';
 	let { data, form } = $props();
 	let values = $derived(form && 'values' in form ? form.values : undefined);
-	let method = $derived(values?.method ?? data.contact?.method ?? 'whatsapp');
 	let displayName = $derived(values?.display_name ?? data.profile?.display_name ?? '');
-	let contactValue = $derived(values?.value ?? data.contact?.value ?? '');
+	type ContactMethod = NonNullable<typeof data.contact>['method'];
+	function isContactMethod(value: unknown): value is ContactMethod {
+		return value === 'whatsapp' || value === 'telegram' || value === 'email';
+	}
+	// Drafts belong to this open form, not to storage or later load/action responses.
+	const initialContact = untrack(() => {
+		const drafts: Record<ContactMethod, string> = { whatsapp: '', telegram: '', email: '' };
+		if (data.contact) drafts[data.contact.method] = data.contact.value;
+		const submittedMethod = values?.method;
+		if (isContactMethod(submittedMethod)) drafts[submittedMethod] = values?.value ?? '';
+		return {
+			method: isContactMethod(submittedMethod) ? submittedMethod : data.contact?.method ?? 'whatsapp',
+			drafts
+		};
+	});
+	let method = $state<ContactMethod>(initialContact.method);
+	let contactDrafts = $state(initialContact.drafts);
 	let busy = $state(false);
 	let deleting = $state(false);
 	let activeRides = $derived(
@@ -56,11 +72,25 @@
 		<form
 			method="POST"
 			action="?/saveProfile"
-			use:enhance={() => {
+			use:enhance={({ formData }) => {
+				const submittedMethod = formData.get('method');
+				const submittedValue = formData.get('value');
 				busy = true;
-				return async ({ update }) => {
-					await update({ reset: false });
-					busy = false;
+				return async ({ result, update }) => {
+					try {
+						await update({ reset: false });
+						await tick();
+						if (
+							result.type === 'success' &&
+							isContactMethod(submittedMethod) &&
+							data.contact?.method === submittedMethod &&
+							contactDrafts[submittedMethod] === submittedValue
+						) {
+							contactDrafts[submittedMethod] = data.contact.value;
+						}
+					} finally {
+						busy = false;
+					}
 				};
 			}}
 		>
@@ -76,21 +106,24 @@
 						placeholder="למשל: דניאל"
 						required
 					/></label
-				><label
-					>דרך פרטית ליצירת קשר<select name="method" bind:value={method}
-						><option value="whatsapp">וואטסאפ</option><option value="telegram">טלגרם</option><option
-							value="email">אימייל</option
-						></select
-					></label
-				><label
-					>{method === 'email'
+				>
+				<div class="contact-fields form-field-full">
+					<label for="contact-method">דרך פרטית ליצירת קשר</label>
+					<label for="contact-value">{method === 'email'
 						? 'כתובת אימייל'
 						: method === 'telegram'
 							? 'שם משתמש בטלגרם'
-							: 'מספר עם קידומת מדינה'}<input
+							: 'מספר עם קידומת מדינה'}</label>
+					<select id="contact-method" name="method" bind:value={method}>
+						<option value="whatsapp">וואטסאפ</option>
+						<option value="telegram">טלגרם</option>
+						<option value="email">אימייל</option>
+					</select>
+					<input
+						id="contact-value"
 						name="value"
 						type={method === 'email' ? 'email' : method === 'whatsapp' ? 'tel' : 'text'}
-						bind:value={contactValue}
+						bind:value={contactDrafts[method]}
 						placeholder={method === 'email'
 							? 'you@example.com'
 							: method === 'telegram'
@@ -99,8 +132,8 @@
 						maxlength="254"
 						required
 						dir="ltr"
-					/></label
-				>
+					/>
+				</div>
 			</div>
 			<p class="privacy-hint">
 				<ShieldCheck size={16} />פרטי הקשר אינם ציבוריים. אישור בקשה חושף אותם רק לשני הצדדים, עד
@@ -179,6 +212,21 @@
 </div>
 
 <style>
+	.contact-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		column-gap: inherit;
+		row-gap: 7px;
+		align-items: stretch;
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.contact-fields > * {
+		min-inline-size: 0;
+	}
+	.contact-fields label {
+		overflow-wrap: anywhere;
+	}
 	.legal-update { margin-bottom: 24px; }
 	.delete-account { border-top: 1px solid var(--border, #deded4); padding-top: 25px; }
 	.delete-account p { font-size: 13px; line-height: 1.8; color: var(--muted, #6b7066); }

@@ -118,6 +118,160 @@ async function saveProfile(actor, displayName, exerciseAcceptance = false) {
 	await mobile(page);
 }
 
+async function exerciseContactDrafts(actor) {
+	const { page, client } = actor;
+	await visit(page, '/account');
+	const form = page.locator('form[action="?/saveProfile"]');
+	const method = form.locator('[name="method"]');
+	const value = form.locator('[name="value"]');
+	// Keep the locator stable when the button switches to its saving label.
+	const save = form.locator('button[type="submit"]');
+	const telegramSeed = 'tremp_test_fixture';
+	const telegramDraft = '@tremp_roundtrip_fixture';
+	const emailDraft = actor.contact;
+	const phoneDraft = '+43 (660) 123-4567';
+	const canonicalPhone = '+436601234567';
+	const invalidPhone = 'local invalid phone draft';
+	const savedContact = async () => assertSafeResult(await client.from('private_contacts').select('method,value').single(), 'Saved contact query failed');
+	const submit = async (expectedStatus) => {
+		const [response] = await Promise.all([
+			page.waitForResponse((response) => response.request().method() === 'POST' && response.url().includes('/account?/saveProfile')),
+			save.click()
+		]);
+		const result = await response.json();
+		assert.equal(result.status, expectedStatus, 'Unexpected profile action result');
+		assert.equal(result.type, expectedStatus === 200 ? 'success' : 'failure');
+		await expect(save).toBeEnabled();
+	};
+
+	// Seed through the real form; reload so no prior email draft survives in memory.
+	await method.selectOption('telegram');
+	await value.fill(`@${telegramSeed}`);
+	await submit(200);
+	await expect(value).toHaveValue(telegramSeed);
+	assert.deepEqual(await savedContact(), { method: 'telegram', value: telegramSeed });
+	await page.reload();
+	await page.waitForLoadState('networkidle');
+	await expect(method).toHaveValue('telegram');
+	await expect(value).toHaveValue(telegramSeed);
+	const originalViewport = page.viewportSize();
+	for (const width of [320, 1440]) {
+		await page.setViewportSize({ width, height: width === 320 ? 812 : 1000 });
+		await screenshot(page, `account-contact-after-${width}`);
+		await page.locator('section[aria-labelledby="profile-heading"]').screenshot({ path: `${artifactDirectory}/account-contact-panel-after-${width}.png` });
+	}
+	await page.setViewportSize(originalViewport);
+	await method.selectOption('email');
+	await expect(value).toHaveValue('');
+	await value.fill(emailDraft);
+	await method.selectOption('whatsapp');
+	await expect(value).toHaveValue('');
+	await value.fill(phoneDraft);
+	await method.selectOption('telegram');
+	await expect(value).toHaveValue(telegramSeed);
+	await value.fill('');
+	await method.selectOption('email');
+	await expect(value).toHaveValue(emailDraft);
+	await method.selectOption('telegram');
+	await expect(value).toHaveValue('');
+	await value.fill(telegramDraft);
+	await method.selectOption('whatsapp');
+	await expect(value).toHaveValue(phoneDraft);
+	checked('Contact drafts seed only the saved method and survive switches, including an explicitly cleared value');
+
+	await value.fill(invalidPhone);
+	await submit(400);
+	await expect(page.getByRole('alert')).toContainText('WhatsApp');
+	await expect(method).toHaveValue('whatsapp');
+	await expect(value).toHaveValue(invalidPhone);
+	assert.deepEqual(await savedContact(), { method: 'telegram', value: telegramSeed });
+	await method.selectOption('email');
+	await expect(value).toHaveValue(emailDraft);
+	await method.selectOption('telegram');
+	await expect(value).toHaveValue(telegramDraft);
+	await method.selectOption('whatsapp');
+	await expect(value).toHaveValue(invalidPhone);
+	checked('Server validation failure retains the active contact value and other method drafts without changing saved data');
+
+	await value.fill(phoneDraft);
+	const submitted = await form.evaluate((element) => [...new FormData(element).entries()]);
+	assert.deepEqual(submitted.filter(([name]) => name === 'value'), [['value', phoneDraft]]);
+	assert.deepEqual(submitted.filter(([name]) => name === 'method'), [['method', 'whatsapp']]);
+	for (const unused of [emailDraft, telegramDraft]) assert.equal(JSON.stringify(submitted).includes(unused), false, 'An unused contact draft entered the submitted form');
+	await submit(200);
+	await expect(value).toHaveValue(canonicalPhone);
+	assert.deepEqual(await savedContact(), { method: 'whatsapp', value: canonicalPhone });
+	await method.selectOption('email');
+	await expect(value).toHaveValue(emailDraft);
+	await method.selectOption('telegram');
+	await expect(value).toHaveValue(telegramDraft);
+	await method.selectOption('whatsapp');
+	await expect(value).toHaveValue(canonicalPhone);
+	// Hold the captured request while the user edits. Its eventual real response
+	// must not overwrite a newer draft or selection made while saving is pending.
+	const pendingPhoneDraft = '+43 (660) 765-4321';
+	const requestReady = Promise.withResolvers();
+	const releaseRequest = Promise.withResolvers();
+	const requestContinued = Promise.withResolvers();
+	const savePattern = /\/account\?\/saveProfile(?:$|&)/;
+	await page.route(savePattern, async (route) => {
+		requestReady.resolve();
+		try {
+			await releaseRequest.promise;
+			await route.continue();
+			requestContinued.resolve(null);
+		} catch (error) { requestContinued.resolve(error); }
+	});
+	try {
+		await value.fill(phoneDraft);
+		const pendingResponse = page.waitForResponse((response) => response.request().method() === 'POST' && response.url().includes('/account?/saveProfile'));
+		await save.click();
+		await requestReady.promise;
+		await expect(save).toBeDisabled();
+		await value.fill(pendingPhoneDraft);
+		await method.selectOption('email');
+		await expect(value).toHaveValue(emailDraft);
+		releaseRequest.resolve();
+		assert.equal(await requestContinued.promise, null, 'Held profile request could not continue');
+		assert.equal((await (await pendingResponse).json()).type, 'success');
+		await expect(save).toBeEnabled();
+		await expect(method).toHaveValue('email');
+		await expect(value).toHaveValue(emailDraft);
+		await method.selectOption('whatsapp');
+		await expect(value).toHaveValue(pendingPhoneDraft);
+		assert.deepEqual(await savedContact(), { method: 'whatsapp', value: canonicalPhone });
+	} finally {
+		releaseRequest.resolve();
+		await requestContinued.promise;
+		await page.unroute(savePattern);
+	}
+	checked('Saving submits only the selected method, normalizes its value and preserves newer edits made while the response is pending');
+
+	await page.reload();
+	await page.waitForLoadState('networkidle');
+	await expect(method).toHaveValue('whatsapp');
+	await expect(value).toHaveValue(canonicalPhone);
+	await method.selectOption('email');
+	await expect(value).toHaveValue('');
+	await method.selectOption('telegram');
+	await expect(value).toHaveValue('');
+	const browserStorage = await page.evaluate(() => ({ local: Object.entries(localStorage), session: Object.entries(sessionStorage) }));
+	assert.equal(browserStorage.local.length, 0, 'Contact editing wrote to localStorage');
+	// SvelteKit may store navigation/scroll state in sessionStorage. None of those
+	// framework entries may contain a private contact value or unsaved draft.
+	for (const contact of [telegramSeed, telegramDraft, emailDraft, phoneDraft, canonicalPhone, pendingPhoneDraft]) {
+		assert.equal(JSON.stringify(browserStorage).includes(contact), false, 'Private drafts were persisted in browser storage');
+	}
+	checked('Reload retains only the saved contact method and does not persist private drafts in browser storage');
+
+	// Restore the fixture's original contact for the existing participant tests.
+	await method.selectOption('email');
+	await value.fill(actor.contact);
+	await submit(200);
+	assert.deepEqual(await savedContact(), { method: 'email', value: actor.contact });
+	await mobile(page);
+}
+
 async function deleteThroughUi(actor, survivor) {
 	const { page } = actor;
 	await visit(page, '/account');
@@ -166,6 +320,8 @@ try {
 	await saveProfile(owner, 'בדיקת פרטיות א', true);
 	await saveProfile(requester, 'בדיקת פרטיות ב');
 	checked('Two mobile profiles explicitly accept current document versions');
+	stage = 'private contact draft handling';
+	await exerciseContactDrafts(owner);
 
 	stage = 'ride creation';
 	await visit(owner.page, '/new');
