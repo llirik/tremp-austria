@@ -1,21 +1,25 @@
 # טרמפ אוסטריה · Tremp Austria
 
-A free, open-source community ride board between Vienna and Bratislava Airport. Browse in Hebrew, offer spare seats, find a ride, or coordinate a shared taxi. Personal contact details become available only after a contact request is accepted.
+A free, non-commercial, volunteer-operated community ride board between Vienna and Bratislava Airport, released as open source. Browse in Hebrew, offer spare seats, find a ride, or coordinate a shared taxi. Personal contact details become available only after a contact request is accepted.
 
-This community board does not provide transport, employ drivers, arrange payments or determine fares. Participants make their own arrangements.
+This community board does not provide transport, employ drivers, dispatch taxis, book rides, arrange transportation payments or determine fares. There are no advertisements or commissions. Participants make their own arrangements.
 
 **App:** [tremp-austria.vercel.app](https://tremp-austria.vercel.app) · **Source:** [llirik/tremp-austria](https://github.com/llirik/tremp-austria) · **License:** [MIT](LICENSE)
 
-**Deployment status:** the app is deployed on Vercel, with a healthy Supabase project in Frankfurt and both migrations applied. Google OAuth is in production for external users; a real browser sign-in reached the private account onboarding page successfully. Email sign-in is disabled in production until a verified sending domain and custom SMTP are available: Supabase's default email service only delivers to project team addresses. See [its SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
+**Deployment:** Vercel hosts the application; Supabase Auth and PostgreSQL use Frankfurt. Google OAuth is the active production sign-in method. Email sign-in is disabled; optional email support in the code must remain off until custom SMTP and a verified sender are configured. See [Supabase SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp). Apply all committed migrations and verify the retention job when deploying.
+
+**Operator / media owner / data controller:** Kirill Vodopianov · Reith bei Kitzbühel, Austria · [tremp.austra@gmail.com](mailto:tremp.austra@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
 
 ## Features
 
 - Public browsing, direction/date/type filters, stable `/ride/<id>` links and Hebrew WhatsApp sharing.
 - **יש לי מקום** — spare seats; **מחפש טרמפ** — looking for a ride; **שותפים למונית** — sharing a taxi.
-- Google sign-in and optional email magic links when creating listings or requesting contact. Each method is enabled explicitly after its provider is configured. Onboarding asks for a display name and one private contact method: WhatsApp, Telegram or email.
+- Google sign-in; onboarding asks for a selected display name and one private contact method: WhatsApp, Telegram or email. Authentication email and Google profile metadata are not published automatically.
 - Personal listings, editing, cancellation, received/sent contact requests, acceptance, rejection and revocation.
 - Potential matches based on direction, departure flexibility, listing type and seats.
 - Mobile layouts, Hebrew RTL, Vienna/Bratislava local times and accessible native forms.
+- Explicit versioned Terms acceptance and Privacy acknowledgment before account onboarding and coordination writes.
+- Self-service account deletion, private listing reports and daily database retention cleanup.
 
 There are no maps, live flight data, internal chat or payments. Optional flight numbers are stored separately from public notes.
 
@@ -31,7 +35,7 @@ SvelteKit and TypeScript provide server-rendered pages and form actions. The UI 
 Browser → SvelteKit loads/form actions → Supabase Auth + PostgreSQL
                                             ├─ public_rides projection
                                             ├─ owner-scoped tables with RLS
-                                            └─ consent-checked contact RPCs
+                                            └─ restricted contact, acceptance, report and deletion RPCs
 ```
 
 | Path                         | Responsibility                                               |
@@ -41,7 +45,7 @@ Browser → SvelteKit loads/form actions → Supabase Auth + PostgreSQL
 | `src/lib/server/`            | Auth boundaries, explicit projections and contact validation |
 | `src/hooks.server.ts`        | Supabase SSR cookies, verified users and security headers    |
 | `src/routes/`                | Board, detail pages, authentication and account actions      |
-| `supabase/migrations/`       | Schema, privileges, RLS, consent RPCs and validation         |
+| `supabase/migrations/`       | Schema, privileges, RLS, restricted RPCs and retention       |
 | `supabase/tests/run-rls.mjs` | PostgreSQL authorization regression suite                    |
 
 Hebrew is the initial language. Shared labels and formatting helpers are isolated in `domain.ts`; English translation remains future work.
@@ -89,17 +93,23 @@ Production does **not** substitute demo data when configuration or database acce
 
 ## Privacy and authorization
 
-Four application tables—`profiles`, `rides`, `private_contacts`, and `contact_requests`—plus private rate counters all use RLS. Anonymous clients read only `public_rides`, an explicit projection of active listings and display names. It excludes auth IDs and contact details. Direct profile and ride-table reads are limited to their owner.
+Six application tables—`profiles`, `rides`, `private_contacts`, `contact_requests`, `legal_acceptances` and `listing_reports`—plus private rate counters use RLS. Anonymous clients read only `public_rides`, a projection of active listings and selected display names. It excludes account IDs and private contacts. Direct profile and ride-table reads are limited to their owner.
 
-Contact RPCs derive participants from the authenticated session and ride. Only the owner can accept or reject a pending request. An accepted relationship allows the pair to query each other's private contact. These permissions are enforced by PostgreSQL even when a client bypasses the UI. See [the database contract](supabase/README.md).
+Contact RPCs derive participants from the user session and ride. Only a pending request's owner can accept or reject it. An accepted relationship lets the pair query each other's private contact. Either participant can revoke an individual request; another accepted request between the pair still grants access. Cancelling a listing hides it publicly but preserves accepted relationships. These rules apply to direct Supabase requests as well as the UI. See [the database contract](supabase/README.md).
 
-Either participant can revoke an individual request; another accepted request between the pair still grants access. Cancelling a listing hides it publicly but preserves accepted relationships. Deleting a ride at the database level removes its requests. Previously copied details cannot be recalled. The UI supports cancellation; account deletion currently requires an operator.
+The account area offers permanent deletion with explicit confirmation. The restricted `delete_my_account` RPC derives its sole target from `auth.uid()` and deletes that Supabase Auth user, cascading their application data. No service-role key is added to the app. Existing Google permission grants, provider backups/logs and information already copied by another participant are outside this deletion.
 
-Public fields reject obvious emails, phone-like strings, links and non-whitespace controls. This cannot reliably identify exact addresses or disguised contact details; users should enter approximate areas. Database limits allow 12 rides/hour and 30/day, and 20 contact requests/hour and 50/day per account. Deleting content does not reset the counters.
+Terms and Privacy versions are `2026-09-09`, defined in `src/lib/legal.ts` and enforced by database functions. The account stores the accepted versions and a server timestamp. New onboarding, ride publishing/editing, contact requests and accepting contact require current acceptance. Rectification of an existing profile/contact, cancellation, rejection, revocation, reporting and account deletion remain available without accepting changed terms. Acceptance is not used as blanket GDPR consent.
 
-Sessions use server-managed cookies and Supabase `getUser()` verification. Google and email sign-in share a PKCE callback that restricts return paths to this application. Google provides basic identity data to Supabase Auth; the public display name and private contact are chosen separately during onboarding. Public page data never serializes an Auth user, email or account UUID. The app includes no analytics or location tracking integration.
+Authenticated users can report listings before profile onboarding. Reports are private, limited to one per user/listing, and rate-limited to 5/hour and 20/day. Users cannot read other reports or moderation status, or modify reports. The operator reviews them directly in Supabase; no email service or moderation dashboard is introduced. See [operations instructions](docs/OPERATIONS.md).
 
-Before wider use, the operator must supply a real operator identity and privacy/support contact in the privacy page and establish deletion and abuse-report processes. Verify SMTP delivery before enabling email sign-in. These operator details are deliberately not invented.
+Daily PostgreSQL cleanup deletes expired/cancelled rides once eligible after 90 days, with related contact requests and reports cascading. Reports also expire 90 days after creation. Account/profile data remains while the account exists. The job is `tremp-retention-daily`, scheduled for 03:15 UTC; deployments must verify that it is active and running. Provider logs/backups follow provider-controlled policies.
+
+Public fields reject obvious emails, phone-like strings, links and unsupported controls. This does not reliably identify exact addresses or disguised contact details. Database creation limits allow 12 rides/hour and 30/day, and 20 contact requests/hour and 50/day per account; deleting content does not reset counters.
+
+Sessions use server-managed HttpOnly cookies and Supabase `getUser()` verification. Google login uses PKCE and only identity/email/profile scopes. Public page data never serializes an Auth user, authentication email or account UUID. No analytics, advertising, tracking pixel or fingerprinting SDK is included; fonts are local. Account-level provider settings and technical logs are distinct from app tracking.
+
+The operator details are now published. The operator still needs to monitor the exact contact mailbox, review reports, verify retention job health and maintain applicable provider agreements and privacy-request handling. [Legal review notes](docs/LEGAL_REVIEW.md) explain the conditional Austrian notice/address assessment and questions that code cannot settle.
 
 ## Matching and lifecycle
 
@@ -109,7 +119,7 @@ Before wider use, the operator must supply a real operator identity and privacy/
 2. Drivers and passengers match when enough seats are available; taxi-share listings match other taxi shares.
 3. Finite windows overlap when the departure difference is no greater than the sum of both flexibility windows. “Flexible” means the same `Europe/Vienna` calendar day.
 
-Matches are suggestions, not reservations. Detail pages compare against upcoming candidates. The default feed filters out past departures without a cron job. A past active listing keeps its shareable detail page but cannot receive new requests. Owners can see their historical and cancelled entries.
+Matches are suggestions, not reservations. Detail pages compare against upcoming candidates. The default feed filters out past departures immediately. A past active listing keeps its shareable detail page until cancellation or retention deletion, but cannot receive new contact requests. Owners can see historical and cancelled entries until deletion. Expired active rides become eligible after departure plus 90 days; cancelled rides use the earlier of their departure and first cancellation plus 90 days.
 
 Timestamps use `timestamptz`; forms interpret input in `Europe/Vienna`. Ambiguous or nonexistent times during daylight-saving transitions are rejected for clarification.
 
@@ -124,9 +134,11 @@ pnpm build      # Production build
 pnpm validate   # All five checks above; also runs in GitHub Actions
 ```
 
-The database harness applies every migration and the seed to a fresh PostgreSQL engine. It supplies Supabase's Auth role/identity primitives and exercises the actual policies. Its 70 checks cover public projections, impersonation, immutable ownership, consent, revocation, deletion, validation and persistent rate limits. No hosted credentials or Docker daemon are needed.
+The database harness applies every migration and the seed to a fresh PostgreSQL engine. It supplies Supabase's Auth role/identity primitives and exercises the actual policies. Its 94 checks cover public projections, impersonation, immutable ownership, contact authorization/revocation, acceptance enforcement, report privacy, self-deletion, retention and persistent rate limits. No hosted credentials or Docker daemon are needed.
 
-For browser smoke tests, run `pnpm exec playwright install chromium`, then `pnpm test:e2e`. Visually inspect Hebrew RTL at approximately 390×844, 430×932 and 1440×900 after interface changes. The current release passes 54 unit/integration tests, 70 database checks and 6 browser tests. Seven additional production-mode OAuth checks cover the Google-only layout, PKCE cookies, safe return paths, CSRF rejection, canonical-domain handoff, disabled email and cancelled authorization. A separate two-account browser check against hosted Supabase passed profile creation, listing creation/editing/cancellation, contact request/acceptance/revocation, anonymous privacy and unauthorized-edit checks; its temporary accounts and data were deleted. SMTP magic-link delivery to non-team addresses remains disabled until custom SMTP is configured.
+For browser tests, run `pnpm exec playwright install chromium`, then `pnpm test:e2e`. Inspect Hebrew RTL at approximately 390×844, 430×932 and 1440×900 after UI changes. Release QA must also exercise real Google sign-in, acceptance, profile and listing actions, a request/accept/revoke exchange, reporting and deletion against the hosted backend with synthetic accounts. Clean up every test account/listing afterward. Test command output is the source of current unit/browser totals; the embedded suite does not itself prove production OAuth or the hosted scheduler works.
+
+`pnpm test:privacy` runs the authenticated browser regression against an already running application and migrated Supabase. Supply `TEST_BASE_URL` (default `http://127.0.0.1:5176`), `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY` and `SUPABASE_TEST_SERVICE_KEY` through the test process environment. The privileged test key provisions and cleans up three synthetic Auth fixtures; application actions use ordinary user sessions. Never put it in a `PUBLIC_` variable or the deployed application. Non-local targets require explicit `ALLOW_HOSTED_PRIVACY_TESTS=1`. The test removes its fixtures in `finally` and stores screenshots/results under ignored `output/playwright/`; it does not complete Google consent.
 
 ## Deploying a fork
 
@@ -150,7 +162,7 @@ Without optional Google brand verification or a custom Supabase domain, Google's
 
 For optional email sign-in, enable the Supabase email provider and configure a verified sender through custom SMTP before setting `PUBLIC_EMAIL_AUTH_ENABLED=true`. Keep this flag false when delivery is unavailable; Google sign-in does not require SMTP. Keep SMTP and management credentials in provider settings.
 
-Verify anonymous browsing, mobile layout, share links, sign-in, onboarding, listing creation/editing/cancellation and a request/accept/revoke exchange. Also verify that an unrelated third account and an anonymous client cannot retrieve the participants' contacts.
+Verify anonymous browsing, legal/footer links, mobile layout, Google sign-in, Terms acknowledgment, onboarding, listing creation/editing/cancellation, reporting, account deletion and a request/accept/revoke exchange. Verify that unrelated and anonymous clients cannot retrieve private contacts or reports. Follow [OPERATIONS.md](docs/OPERATIONS.md) to verify the database retention job and review reports.
 
 ## Contributing
 
