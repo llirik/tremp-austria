@@ -76,9 +76,10 @@
 							><option value="bts_to_vienna">ברטיסלבה BTS ← וינה</option></select
 						>
 					</div>
-					<div class="filter-control">
+					<div class="filter-control filter-control-date">
 						<CalendarDays size={17} /><label for="date">תאריך</label><input
 							id="date"
+							dir="ltr"
 							aria-label="סינון לפי תאריך"
 							type="date"
 							bind:value={date}

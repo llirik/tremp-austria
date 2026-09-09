@@ -1,4 +1,119 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+
+test.use({ locale: 'en-GB' });
+
+interface NativeNode {
+	nodeId: number;
+	nodeName: string;
+	nodeValue: string;
+	attributes?: string[];
+	children?: NativeNode[];
+	shadowRoots?: NativeNode[];
+}
+
+function descendants(node: NativeNode): NativeNode[] {
+	return [node, ...[...(node.children ?? []), ...(node.shadowRoots ?? [])].flatMap(descendants)];
+}
+
+async function expectNativeDateToFit(page: Page, input: Locator) {
+	await expect(input).toHaveAttribute('type', 'date');
+	await expect(input).toHaveAttribute('dir', 'ltr');
+	await expect(input).toHaveCSS('direction', 'ltr');
+	await expect(input).toHaveCSS('unicode-bidi', 'isolate');
+	const parent = input.locator('..');
+	await expect(parent).toHaveCSS('direction', 'rtl');
+	const parentBounds = (await parent.boundingBox())!;
+	const inputBounds = (await input.boundingBox())!;
+	expect(inputBounds.x).toBeGreaterThanOrEqual(parentBounds.x);
+	expect(inputBounds.x + inputBounds.width).toBeLessThanOrEqual(
+		parentBounds.x + parentBounds.width
+	);
+	expect(inputBounds.y).toBeGreaterThanOrEqual(parentBounds.y);
+	expect(inputBounds.y + inputBounds.height).toBeLessThanOrEqual(
+		parentBounds.y + parentBounds.height
+	);
+	expect(inputBounds.width).toBeGreaterThanOrEqual(44);
+	expect(inputBounds.height).toBeGreaterThanOrEqual(44);
+	await expect(input).toHaveValue('2026-10-09');
+
+	// A native date input can report scrollWidth === clientWidth while its internal
+	// editor clips the year. Inspect Chromium's user-agent shadow DOM to measure the
+	// actual displayed digits and separators against that editor's clipping box.
+	const session = await page.context().newCDPSession(page);
+	try {
+		const { root } = (await session.send('DOM.getDocument', { depth: -1, pierce: true })) as {
+			root: NativeNode;
+		};
+		const id = await input.getAttribute('id');
+		const nativeInput = descendants(root).find(
+			(node) =>
+				node.nodeName === 'INPUT' &&
+				node.attributes?.some(
+					(value, index) => index % 2 === 0 && value === 'id' && node.attributes?.[index + 1] === id
+				)
+		)!;
+		expect(nativeInput).toBeDefined();
+		const editor = descendants(nativeInput).find((node) =>
+			node.attributes?.includes('-webkit-datetime-edit')
+		)!;
+		expect(editor).toBeDefined();
+		const picker = descendants(nativeInput).find((node) =>
+			node.attributes?.includes('-webkit-calendar-picker-indicator')
+		)!;
+		expect(picker).toBeDefined();
+		const textNodes = descendants(editor).filter((node) => node.nodeName === '#text');
+		expect(textNodes.map((node) => node.nodeValue)).toEqual(['09', '/', '10', '/', '2026']);
+
+		async function box(node: NativeNode, edge: 'content' | 'border' = 'border') {
+			const { model } = (await session.send('DOM.getBoxModel', { nodeId: node.nodeId })) as {
+				model: { content: number[]; border: number[] };
+			};
+			const x = model[edge].filter((_, index) => index % 2 === 0);
+			const y = model[edge].filter((_, index) => index % 2 === 1);
+			return {
+				left: Math.min(...x),
+				right: Math.max(...x),
+				top: Math.min(...y),
+				bottom: Math.max(...y)
+			};
+		}
+		const [editorBox, inputBox, pickerBox, ...textBoxes] = await Promise.all([
+			box(editor, 'content'),
+			box(nativeInput, 'content'),
+			box(picker),
+			...textNodes.map((node) => box(node))
+		]);
+		expect(pickerBox.right - pickerBox.left, 'native picker width').toBeGreaterThan(0);
+		expect(pickerBox.bottom - pickerBox.top, 'native picker height').toBeGreaterThan(0);
+		expect(pickerBox.left).toBeGreaterThanOrEqual(inputBox.left - 0.5);
+		expect(pickerBox.right).toBeLessThanOrEqual(inputBox.right + 0.5);
+		expect(pickerBox.top).toBeGreaterThanOrEqual(inputBox.top - 0.5);
+		expect(pickerBox.bottom).toBeLessThanOrEqual(inputBox.bottom + 0.5);
+		for (const [index, textBox] of textBoxes.entries()) {
+			const label = `native date ${textNodes[index].nodeValue}`;
+			expect(textBox.right - textBox.left, `${label}: rendered width`).toBeGreaterThan(0);
+			for (const container of [editorBox, inputBox]) {
+				expect(textBox.left, `${label}: unclipped left`).toBeGreaterThanOrEqual(
+					container.left - 0.5
+				);
+				expect(textBox.right, `${label}: unclipped right`).toBeLessThanOrEqual(
+					container.right + 0.5
+				);
+				expect(textBox.top, `${label}: unclipped top`).toBeGreaterThanOrEqual(container.top - 0.5);
+				expect(textBox.bottom, `${label}: unclipped bottom`).toBeLessThanOrEqual(
+					container.bottom + 0.5
+				);
+			}
+			if (index > 0) {
+				expect(textBox.left, `${label}: left-to-right order`).toBeGreaterThanOrEqual(
+					textBoxes[index - 1].right - 0.5
+				);
+			}
+		}
+	} finally {
+		await session.detach();
+	}
+}
 
 async function expectControlsToFit(container: Locator, controls: Locator) {
 	const bounds = await container.boundingBox();
@@ -74,6 +189,10 @@ for (const width of [320, 360, 390, 430]) {
 			const baseline = await tabs
 				.first()
 				.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+			const dateInput = toolbar.getByLabel('סינון לפי תאריך');
+			const dateFont = await dateInput.evaluate((element) =>
+				parseFloat(getComputedStyle(element).fontSize)
+			);
 
 			// Stress text metrics at a fixed CSS viewport, not page zoom or deviceScaleFactor.
 			// Android/Samsung font boosting varies by device; this is deterministic reflow coverage,
@@ -91,17 +210,24 @@ for (const width of [320, 360, 390, 430]) {
 				.first()
 				.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
 			expect(enlarged).toBeCloseTo(baseline * textScale, 2);
+			expect(
+				await dateInput.evaluate((element) => parseFloat(getComputedStyle(element).fontSize))
+			).toBeCloseTo(dateFont * textScale, 2);
 			expect(page.viewportSize()!.width).toBe(width);
 			await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+			await expect(toolbar.locator('.filters-row')).toHaveCSS('direction', 'rtl');
+			await dateInput.fill('2026-10-09');
+			await expectNativeDateToFit(page, dateInput);
 			await page.screenshot({
 				path: `output/playwright/mobile-filters-${width}-${textScale * 100}.png`,
 				fullPage: true
 			});
+			await dateInput.fill('');
 
 			const toolbarBounds = await toolbar.boundingBox();
 			expect(toolbarBounds!.x).toBeGreaterThanOrEqual(0);
 			expect(toolbarBounds!.x + toolbarBounds!.width).toBeLessThanOrEqual(width);
-			for (const selector of ['.filter-tabs', '.date-shortcuts']) {
+			for (const selector of ['.filters-row', '.filter-tabs', '.date-shortcuts']) {
 				const group = toolbar.locator(selector);
 				const groupBounds = await group.boundingBox();
 				expect(groupBounds!.x).toBeGreaterThanOrEqual(toolbarBounds!.x);
@@ -112,6 +238,10 @@ for (const width of [320, 360, 390, 430]) {
 					await group.evaluate((element) => getComputedStyle(element).overflowX)
 				);
 			}
+			await expectControlsToFit(
+				toolbar.locator('.filters-row'),
+				toolbar.locator('.filter-control')
+			);
 			const tabBounds = await expectControlsToFit(toolbar.locator('.filter-tabs'), tabs);
 			expect(await page.evaluate(() => window.innerWidth)).toBe(width);
 			expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

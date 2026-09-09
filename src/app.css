@@ -355,6 +355,10 @@ small {
 .filter-control svg {
 	color: #829386;
 }
+.filter-control input[type='date'] {
+	direction: ltr;
+	unicode-bidi: isolate;
+}
 .filter-tabs {
 	display: flex;
 	align-items: center;
@@ -1669,6 +1673,22 @@ small {
 	.filter-control select,
 	.filter-control input {
 		font-size: 12px;
+	}
+	.filters-row {
+		display: flex;
+		flex-wrap: wrap;
+	}
+	.filter-control {
+		flex: 1.1 1 0;
+		min-inline-size: min(100%, 7em);
+	}
+	.filter-control-date {
+		flex: 1 1 0;
+		min-inline-size: min-content;
+	}
+	.filter-control input[type='date'] {
+		/* Reserve space for the complete numeric date and the native picker. */
+		min-inline-size: calc(10ch + 2.5em);
 	}
 	.filter-tabs {
 		display: grid;
