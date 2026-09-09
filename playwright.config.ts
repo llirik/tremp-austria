@@ -19,8 +19,25 @@ export default defineConfig({
 		}
 	},
 	projects: [
-		{ name: 'mobile-390', use: { viewport: { width: 390, height: 844 } } },
-		{ name: 'mobile-430', use: { viewport: { width: 430, height: 932 } } },
-		{ name: 'desktop', use: { viewport: { width: 1440, height: 900 } } }
+		{
+			name: 'mobile-390',
+			testIgnore: '**/mobile-filters.spec.ts',
+			use: { viewport: { width: 390, height: 844 } }
+		},
+		{
+			name: 'mobile-430',
+			testIgnore: '**/mobile-filters.spec.ts',
+			use: { viewport: { width: 430, height: 932 } }
+		},
+		{
+			name: 'desktop',
+			testIgnore: '**/mobile-filters.spec.ts',
+			use: { viewport: { width: 1440, height: 900 } }
+		},
+		{
+			name: 'mobile-filters',
+			testMatch: '**/mobile-filters.spec.ts',
+			use: { isMobile: true, hasTouch: true }
+		}
 	]
 });

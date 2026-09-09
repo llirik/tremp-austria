@@ -99,7 +99,10 @@
 							class="filter-tab"
 							class:active={rideType === type.value}
 							aria-pressed={rideType === type.value}
-							onclick={() => (rideType = type.value)}><type.icon size={15} />{type.label}</button
+							onclick={() => (rideType = type.value)}
+							><type.icon size={15} aria-hidden="true" /><span class="filter-tab-label"
+								>{type.label}</span
+							></button
 						>{/each}
 				</div>
 			</div>
