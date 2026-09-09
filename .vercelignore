@@ -1,0 +1,10 @@
+.env
+.env.*
+.git
+.vscode
+output
+test-results
+playwright-report
+supabase/.temp
+supabase/.branches
+node_modules
