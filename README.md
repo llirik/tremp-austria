@@ -6,7 +6,7 @@ This community board does not provide transport, employ drivers, arrange payment
 
 **App:** [tremp-austria.vercel.app](https://tremp-austria.vercel.app) · **Source:** [llirik/tremp-austria](https://github.com/llirik/tremp-austria) · **License:** [MIT](LICENSE)
 
-**Deployment status:** the app is deployed on Vercel, with a healthy Supabase project in Frankfurt and both migrations applied. Google OAuth is configured as the primary sign-in method. Email sign-in is disabled in production until a verified sending domain and custom SMTP are available: Supabase's default email service only delivers to project team addresses. See [its SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
+**Deployment status:** the app is deployed on Vercel, with a healthy Supabase project in Frankfurt and both migrations applied. Google OAuth is in production for external users; a real browser sign-in reached the private account onboarding page successfully. Email sign-in is disabled in production until a verified sending domain and custom SMTP are available: Supabase's default email service only delivers to project team addresses. See [its SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ## Features
 
@@ -144,7 +144,9 @@ Import the GitHub repository into Vercel with the SvelteKit preset, Node.js 24, 
 
 Set Supabase Auth's Site URL to the canonical app origin and permit `/auth/callback` redirects including the `next` query string. Preview deployments should use a separate test backend and an intentionally permitted callback origin.
 
-For Google sign-in, create a web OAuth client in a separate Google Cloud project. Its authorized redirect URI is `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` (the Supabase callback), and its authorized JavaScript origin is your app origin. Configure the client ID and secret in Supabase Auth's Google provider, use only basic identity scopes, and make the consent screen available to the intended audience. Then set `PUBLIC_GOOGLE_AUTH_ENABLED=true` and redeploy. See the [Supabase Google provider guide](https://supabase.com/docs/guides/auth/social-login/auth-google).
+For Google sign-in, create a web OAuth client in a separate Google Cloud project. Its authorized redirect URI is `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` (the Supabase callback), and its authorized JavaScript origin is your app origin. Configure the client ID and secret in Supabase Auth's Google provider. In Google Data Access, select only `openid`, `https://www.googleapis.com/auth/userinfo.email` and `https://www.googleapis.com/auth/userinfo.profile`, and make the consent screen available to the intended audience. Then set `PUBLIC_GOOGLE_AUTH_ENABLED=true` and redeploy. See the [Supabase Google provider guide](https://supabase.com/docs/guides/auth/social-login/auth-google).
+
+Without optional Google brand verification or a custom Supabase domain, Google's consent screen can show your Supabase project domain. This does not prevent the basic sign-in flow; a custom domain or brand verification can improve recognition later.
 
 For optional email sign-in, enable the Supabase email provider and configure a verified sender through custom SMTP before setting `PUBLIC_EMAIL_AUTH_ENABLED=true`. Keep this flag false when delivery is unavailable; Google sign-in does not require SMTP. Keep SMTP and management credentials in provider settings.
 
