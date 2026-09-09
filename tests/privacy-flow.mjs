@@ -39,6 +39,16 @@ function assertSafeResult(result, message) {
 	return result.data;
 }
 
+async function boundedWait(promise, message, timeoutMs = 10_000) {
+	let timeout;
+	try {
+		return await Promise.race([
+			promise,
+			new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error(message)), timeoutMs); })
+		]);
+	} finally { clearTimeout(timeout); }
+}
+
 async function visit(page, path, status = 200) {
 	currentPage = page;
 	const response = await page.goto(`${base}${path}`);
@@ -213,8 +223,10 @@ async function exerciseContactDrafts(actor) {
 	const requestReady = Promise.withResolvers();
 	const releaseRequest = Promise.withResolvers();
 	const requestContinued = Promise.withResolvers();
+	let routeStarted = false;
 	const savePattern = /\/account\?\/saveProfile(?:$|&)/;
 	await page.route(savePattern, async (route) => {
+		routeStarted = true;
 		requestReady.resolve();
 		try {
 			await releaseRequest.promise;
@@ -224,16 +236,23 @@ async function exerciseContactDrafts(actor) {
 	});
 	try {
 		await value.fill(phoneDraft);
-		const pendingResponse = page.waitForResponse((response) => response.request().method() === 'POST' && response.url().includes('/account?/saveProfile'));
+		// Observe rejections immediately, even if an earlier interaction fails and
+		// this response is never awaited. Outer fixture cleanup must still run.
+		const pendingResponse = page.waitForResponse(
+			(response) => response.request().method() === 'POST' && response.url().includes('/account?/saveProfile'),
+			{ timeout: 10_000 }
+		).then((response) => ({ response, error: null }), (error) => ({ response: null, error }));
 		await save.click();
-		await requestReady.promise;
+		await boundedWait(requestReady.promise, 'Profile save did not start a request');
 		await expect(save).toBeDisabled();
 		await value.fill(pendingPhoneDraft);
 		await method.selectOption('email');
 		await expect(value).toHaveValue(emailDraft);
 		releaseRequest.resolve();
-		assert.equal(await requestContinued.promise, null, 'Held profile request could not continue');
-		assert.equal((await (await pendingResponse).json()).type, 'success');
+		assert.equal(await boundedWait(requestContinued.promise, 'Held profile request did not continue'), null, 'Held profile request could not continue');
+		const pending = await pendingResponse;
+		assert.ok(!pending.error && pending.response, 'Profile save response did not arrive');
+		assert.equal((await pending.response.json()).type, 'success');
 		await expect(save).toBeEnabled();
 		await expect(method).toHaveValue('email');
 		await expect(value).toHaveValue(emailDraft);
@@ -242,8 +261,9 @@ async function exerciseContactDrafts(actor) {
 		assert.deepEqual(await savedContact(), { method: 'whatsapp', value: canonicalPhone });
 	} finally {
 		releaseRequest.resolve();
-		await requestContinued.promise;
-		await page.unroute(savePattern);
+		try {
+			if (routeStarted) await boundedWait(requestContinued.promise, 'Held request cleanup timed out', 2_000);
+		} finally { await page.unroute(savePattern); }
 	}
 	checked('Saving submits only the selected method, normalizes its value and preserves newer edits made while the response is pending');
 
