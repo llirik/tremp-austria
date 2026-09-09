@@ -16,7 +16,7 @@
 			<bdi>Kirill Vodopianov</bdi><br />
 			יישוב מגורים: <bdi>Reith bei Kitzbühel, Austria</bdi><br />
 			לפניות משפטיות ולנושאי פרטיות:
-			<a class="text-link" href="mailto:tremp.austra@gmail.com"><bdi>tremp.austra@gmail.com</bdi></a
+			<a class="text-link" href="mailto:tremp.austria@gmail.com"><bdi>tremp.austria@gmail.com</bdi></a
 			>
 		</p>
 		<h2>מטרת המיזם</h2>

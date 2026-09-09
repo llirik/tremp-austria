@@ -2,7 +2,7 @@
 
 Report vulnerabilities privately using [the repository's security advisory form](https://github.com/llirik/tremp-austria/security/advisories/new). Include the affected route or SQL operation, expected permission boundary and reproduction steps with synthetic data. Never attach actual contacts, cookies, credentials or access tokens to a public issue.
 
-Private vulnerability reporting is enabled. If the form is unavailable, contact [tremp.austra@gmail.com](mailto:tremp.austra@gmail.com) privately; do not publish exploit details. This volunteer service does not promise an immediate response.
+Private vulnerability reporting is enabled. If the form is unavailable, contact [tremp.austria@gmail.com](mailto:tremp.austria@gmail.com) privately; do not publish exploit details. This volunteer service does not promise an immediate response.
 
 The latest `main` branch is maintained. Keep application and database policy versions aligned by applying the committed migrations.
 
@@ -21,7 +21,7 @@ Run `pnpm test:db` for 94 actual PostgreSQL authorization/retention checks, plus
 
 ## Operation and limitations
 
-Operator / media owner / data controller: **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austra@gmail.com**. Public notices contain no street or private telephone number. [Operations](OPERATIONS.md) covers private report review, abuse handling, rights requests and checking the daily retention job.
+Operator / media owner / data controller: **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austria@gmail.com**. Public notices contain no street or private telephone number. [Operations](OPERATIONS.md) covers private report review, abuse handling, rights requests and checking the daily retention job.
 
 Protect Google Cloud, hosting and Supabase operator accounts. Google is the production login method; keep email login off unless custom SMTP is deliberately configured and tested. Review provider agreements, logs, backup retention and any account-level telemetry setting separately. No analytics/tracking SDK is present in application source.
 

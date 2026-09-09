@@ -36,4 +36,4 @@ The hosted runner's unrelated Google Chrome APT source returned a checksum misma
 
 ## Operator follow-through
 
-The published operator is **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austra@gmail.com**. No street or private telephone number is published. Verify that this exact mailbox receives mail, monitor it and review reports regularly in protected Supabase administration. Maintain applicable provider agreement/transfer records and confirm the Austrian legal-notice classification. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records these legal questions; technical checks are not a blanket compliance certification.
+The published operator is **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austria@gmail.com**. No street or private telephone number is published. Verify that this exact mailbox receives mail, monitor it and review reports regularly in protected Supabase administration. Maintain applicable provider agreement/transfer records and confirm the Austrian legal-notice classification. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records these legal questions; technical checks are not a blanket compliance certification.

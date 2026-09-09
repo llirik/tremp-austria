@@ -155,7 +155,7 @@ try {
 	}
 	await expect(anonPage.locator('main')).toContainText('Kirill Vodopianov');
 	await expect(anonPage.locator('main')).toContainText('Reith bei Kitzbühel, Austria');
-	await expect(anonPage.locator('main')).toContainText('tremp.austra@gmail.com');
+	await expect(anonPage.locator('main')).toContainText('tremp.austria@gmail.com');
 	await screenshot(anonPage, 'impressum-430');
 	checked('Legal pages and footer are public, Hebrew RTL and mobile-safe');
 

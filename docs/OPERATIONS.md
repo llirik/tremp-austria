@@ -1,6 +1,6 @@
 # Community service operations
 
-Operator / media owner / data controller: **Kirill Vodopianov** · **Reith bei Kitzbühel, Austria** · **tremp.austra@gmail.com**.
+Operator / media owner / data controller: **Kirill Vodopianov** · **Reith bei Kitzbühel, Austria** · **tremp.austria@gmail.com**.
 
 Use the exact mailbox above for legal/privacy requests. Verify delivery and monitor it. Google is the active login provider; email login remains disabled. No transactional-email provider or automatic report email is configured.
 

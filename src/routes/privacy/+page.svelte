@@ -19,7 +19,7 @@
 			<bdi>Kirill Vodopianov</bdi><br />
 			<bdi>Reith bei Kitzbühel, Austria</bdi><br />
 			לפניות פרטיות ומימוש זכויות:
-			<a class="text-link" href="mailto:tremp.austra@gmail.com"><bdi>tremp.austra@gmail.com</bdi></a
+			<a class="text-link" href="mailto:tremp.austria@gmail.com"><bdi>tremp.austria@gmail.com</bdi></a
 			>
 		</p>
 		<h2>איזה מידע נשמר ולמה?</h2>
@@ -147,7 +147,7 @@
 		<p>
 			בכפוף לתנאים שבדין, יש לכם זכות לגישה למידע, לתיקונו ולמחיקתו, להגבלת עיבוד, להתנגדות לעיבוד
 			על בסיס אינטרס לגיטימי ולניידות נתונים במקרים המתאימים. אפשר לפנות אל
-			<a class="text-link" href="mailto:tremp.austra@gmail.com"><bdi>tremp.austra@gmail.com</bdi></a
+			<a class="text-link" href="mailto:tremp.austria@gmail.com"><bdi>tremp.austria@gmail.com</bdi></a
 			>. לצורך טיפול בבקשה ייתכן שיידרש אימות זהות במידה הנחוצה. בקשות מטופלות במסגרת המועדים
 			הקבועים בדין, בדרך כלל בתוך חודש.
 		</p>

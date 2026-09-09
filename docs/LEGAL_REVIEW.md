@@ -6,7 +6,7 @@ Reviewed 9 September 2026. This is an engineering record of the implemented noti
 
 - Operator, media owner and data controller: **Kirill Vodopianov**.
 - Residence / Gemeinde: **Reith bei Kitzbühel, Austria**.
-- Legal and privacy contact: **tremp.austra@gmail.com**.
+- Legal and privacy contact: **tremp.austria@gmail.com**.
 
 The final, explicit address in the operator's request governs an earlier spelling variation. No street, house number, private telephone number, company number or tax registration has been inferred or published. The operator should verify that this exact mailbox exists, receives mail and is monitored; application code cannot establish that.
 

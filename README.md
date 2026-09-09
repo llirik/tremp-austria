@@ -8,7 +8,7 @@ This community board does not provide transport, employ drivers, dispatch taxis,
 
 **Deployment:** Vercel hosts the application; Supabase Auth and PostgreSQL use Frankfurt. Google OAuth is the active production sign-in method. Email sign-in is disabled; optional email support in the code must remain off until custom SMTP and a verified sender are configured. See [Supabase SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp). Apply all committed migrations and verify the retention job when deploying.
 
-**Operator / media owner / data controller:** Kirill Vodopianov · Reith bei Kitzbühel, Austria · [tremp.austra@gmail.com](mailto:tremp.austra@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
+**Operator / media owner / data controller:** Kirill Vodopianov · Reith bei Kitzbühel, Austria · [tremp.austria@gmail.com](mailto:tremp.austria@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
 
 ## Features
 
