@@ -124,6 +124,15 @@ describe('ride validation and public privacy', () => {
 		expect(validatePublicText('wa.me/436601234567')).toBeTruthy();
 		expect(validatePublicText('וינה, רובע 2')).toBeNull();
 	});
+	it.each([
+		'name+ride@example.com',
+		'+43 (660) 123-4567',
+		'0660 1234567',
+		'mailto:private',
+		'tel:123'
+	])('directs obvious contact text to the protected workflow: %s', (text) => {
+		expect(validatePublicText(text)).toContain('בקשת הקשר המוגנת');
+	});
 	it('never accepts external return targets', () => {
 		for (const path of [
 			'https://evil.test',

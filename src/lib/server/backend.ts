@@ -1,6 +1,7 @@
 import { error, redirect, type RequestEvent } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { safeNext, type Ride } from '../domain';
+import { requireLegalAcceptance } from './legal';
 
 export const rideColumns = 'id,ride_type,direction,departure_at,flexibility_minutes,passenger_count,available_seats,origin_area,destination_area,flight_number,note,status,created_at';
 export const publicRideColumns = `${rideColumns},display_name`;
@@ -45,6 +46,7 @@ export async function requireProfile(event: RequestEvent, next: string) {
 	const auth = requireUser(event, next);
 	const profile = await getProfile(auth.supabase, auth.user.id);
 	if (!profile.complete) redirect(303, `/account?setup=1&next=${encodeURIComponent(safeNext(next))}`);
+	await requireLegalAcceptance(auth.supabase, next);
 	return { ...auth, ...profile };
 }
 

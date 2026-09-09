@@ -44,9 +44,10 @@
 	<div class="footer-inner">
 		<p>מחברים אנשים, בדרך הביתה. <Heart size={13} /></p>
 		<nav aria-label="קישורים נוספים">
-			<a href={resolve('/about')}>על המיזם</a><a href={resolve('/privacy')}>פרטיות</a><span
-				>וינה ↔ ברטיסלבה</span
-			>
+			<a href={resolve('/about')}>על המיזם</a>
+			<a href={resolve('/privacy')}>פרטיות</a>
+			<a href={resolve('/terms')}>תנאי שימוש</a>
+			<a href={resolve('/impressum')}>Impressum</a>
 		</nav>
 	</div>
 </footer>
@@ -59,3 +60,9 @@
 		><UserRound size={21} /><span>האזור שלי</span></a
 	>
 </nav>
+
+<style>
+	.footer-inner nav {
+		flex-wrap: wrap;
+	}
+</style>

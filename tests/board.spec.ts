@@ -29,9 +29,12 @@ test('Hebrew public board, filters, detail and contact authentication', async ({
 });
 
 test('legal pages, invalid links and responsive page bounds', async ({ page }, testInfo) => {
-	for (const route of ['/', '/about', '/privacy', '/login']) {
+	for (const route of ['/', '/about', '/privacy', '/terms', '/impressum', '/login']) {
 		await page.goto(route);
 		await expect(page.locator('main')).toBeVisible();
+		for (const legalRoute of ['/about', '/privacy', '/terms', '/impressum']) {
+			await expect(page.locator(`footer a[href="${legalRoute}"]`)).toBeVisible();
+		}
 		expect(
 			await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
 		).toBe(true);
@@ -43,4 +46,17 @@ test('legal pages, invalid links and responsive page bounds', async ({ page }, t
 		path: `output/playwright/board-${testInfo.project.name}.png`,
 		fullPage: false
 	});
+});
+
+test('public browsing loads no third-party tracking or optional cookies', async ({ page }) => {
+	const requests: string[] = [];
+	page.on('request', (request) => requests.push(request.url()));
+	await page.goto('/');
+	await page.waitForLoadState('networkidle');
+	const origin = new URL(page.url()).origin;
+	expect(requests.filter((url) => new URL(url).origin !== origin)).toEqual([]);
+	expect(
+		requests.filter((url) => /\/_vercel\/(insights|speed-insights)|gtag|analytics|pixel/i.test(url))
+	).toEqual([]);
+	expect(await page.context().cookies()).toEqual([]);
 });

@@ -18,6 +18,7 @@
 	import { directions, rideTypes, dateLabel, timeLabel, flexibilityLabel } from '$lib/domain';
 	import RideCard from '$lib/components/RideCard.svelte';
 	import ShareActions from '$lib/components/ShareActions.svelte';
+	import ReportListing from '$lib/components/ReportListing.svelte';
 	let { data, form } = $props();
 	let ride = $derived(data.ride);
 	let route = $derived(directions[ride.direction]);
@@ -133,6 +134,17 @@
 	<p class="privacy-hint">
 		<ShieldCheck size={15} />הנסיעה מתואמת ישירות ביניכם. הלוח אינו מספק שירותי הסעה.
 	</p>
+	<ReportListing
+		rideId={ride.id}
+		authenticated={data.authenticated}
+		demo={data.demo}
+		open={data.reportOpen}
+		success={Boolean(form && 'reportSuccess' in form && form.reportSuccess)}
+		error={form && 'reportError' in form ? form.reportError : undefined}
+		values={form && 'reportValues' in form
+			? (form.reportValues as Record<string, string>)
+			: undefined}
+	/>
 	{#if data.matches.length}<section class="matches-section">
 			<h2>אולי אתם באותו כיוון</h2>
 			<p>נסיעות עם כיוון, זמן ומקומות מתאימים. כדאי לוודא את הפרטים יחד.</p>

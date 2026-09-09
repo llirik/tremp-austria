@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { parseRide } from '$lib/domain';
 import { actionError, formValues, ownRide, requireUser, rideFormFields } from '$lib/server/backend';
+import { requireLegalAcceptance } from '$lib/server/legal';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -16,6 +17,7 @@ export const actions: Actions = {
 		const ride = await ownRide(supabase, user.id, event.params.id);
 		if (!ride) return fail(404, { error: 'הנסיעה לא נמצאה.' });
 		if (ride.status === 'cancelled') return fail(400, { error: 'לא ניתן לערוך נסיעה שבוטלה.' });
+		await requireLegalAcceptance(supabase, `/ride/${ride.id}/edit`);
 		const form = await event.request.formData();
 		const values = formValues(form, rideFormFields);
 		const parsed = parseRide(form);

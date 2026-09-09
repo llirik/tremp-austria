@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { ArrowRight, HeartHandshake } from '@lucide/svelte';
+	import LegalLinks from '$lib/components/LegalLinks.svelte';
 </script>
 
 <svelte:head><title>על המיזם · טרמפ אוסטריה</title></svelte:head>
@@ -34,8 +35,9 @@
 		</p>
 		<h2>פתוח לכולם, גם בקוד</h2>
 		<p>
-			המיזם נבנה בקוד פתוח תחת רישיון MIT. הוא מיועד לתיאום קהילתי ולא להפעלת שירות תחבורה מסחרי.
+			המיזם נבנה בקוד פתוח תחת רישיון MIT, מופעל בהתנדבות ואינו מסחרי. הוא חינמי, ללא פרסום או
+			עמלות, ומיועד לתיאום קהילתי.
 		</p>
-		<a class="text-link" href={resolve('/privacy')}>למדיניות הפרטיות</a>
+		<LegalLinks />
 	</div>
 </div>

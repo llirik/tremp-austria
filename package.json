@@ -15,6 +15,7 @@
 		"test": "vitest run",
 		"test:db": "node supabase/tests/run-rls.mjs",
 		"test:e2e": "playwright test",
+		"test:privacy": "node tests/privacy-flow.mjs",
 		"validate": "pnpm check && pnpm lint && pnpm test && pnpm test:db && pnpm build"
 	},
 	"devDependencies": {

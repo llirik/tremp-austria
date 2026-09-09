@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
-	import { ShieldCheck, LogOut, Plus, Pencil, ArrowUpLeft, Inbox, Check } from '@lucide/svelte';
+	import { ShieldCheck, LogOut, Plus, Pencil, ArrowUpLeft, Inbox, Check, Trash2 } from '@lucide/svelte';
 	import { localDate } from '$lib/domain';
 	import RideCard from '$lib/components/RideCard.svelte';
 	import ContactRequestCard from '$lib/components/ContactRequestCard.svelte';
+	import LegalAcceptance from '$lib/components/LegalAcceptance.svelte';
 	let { data, form } = $props();
 	let values = $derived(form && 'values' in form ? form.values : undefined);
 	let method = $derived(values?.method ?? data.contact?.method ?? 'whatsapp');
 	let displayName = $derived(values?.display_name ?? data.profile?.display_name ?? '');
 	let contactValue = $derived(values?.value ?? data.contact?.value ?? '');
 	let busy = $state(false);
+	let deleting = $state(false);
 	let activeRides = $derived(
 		data.rides.filter(
 			(ride) => ride.status === 'active' && Date.parse(ride.departure_at) >= Date.now()
@@ -37,6 +39,17 @@
 		</div>{/if}{#if form?.success}<div class="notice success" role="status">
 			<Check size={17} />{form.success}
 		</div>{/if}
+	{#if !data.legalAccepted && data.profile && data.contact}
+		<section class="surface legal-update" aria-labelledby="legal-heading">
+			<h2 id="legal-heading" class="form-heading">לפני שממשיכים לתאם</h2>
+			<p class="section-description">יש לקרוא ולאשר את המסמכים העדכניים לפני פרסום, עריכה או אישור קשר. אפשר לעדכן פרטים אישיים, לבטל נסיעות או גישה ולמחוק את החשבון גם ללא אישור מחודש.</p>
+			<form method="POST" action="?/acceptLegal" use:enhance>
+				<input type="hidden" name="next" value={data.next || ''} />
+				<LegalAcceptance />
+				<button class="button button-primary" type="submit">אישור והמשך</button>
+			</form>
+		</section>
+	{/if}
 	<section class="surface" aria-labelledby="profile-heading">
 		<h2 id="profile-heading" class="form-heading">נעים להכיר</h2>
 		<p class="section-description">מספיק שם פרטי ודרך אחת לשמור על קשר.</p>
@@ -93,6 +106,7 @@
 				<ShieldCheck size={16} />פרטי הקשר אינם ציבוריים. אישור בקשה חושף אותם רק לשני הצדדים, עד
 				לביטול הגישה.
 			</p>
+			{#if !data.legalAccepted && (!data.profile || !data.contact)}<LegalAcceptance />{/if}
 			<button type="submit" class="button button-primary" disabled={busy}
 				>{busy ? 'שומרים…' : data.next ? 'שמירה והמשך' : 'שמירת הפרטים'}</button
 			>
@@ -147,4 +161,27 @@
 	<form class="logout-form" method="POST" action="?/logout">
 		<button type="submit" class="button button-secondary"><LogOut size={16} />יציאה מהחשבון</button>
 	</form>
+	<section class="account-section delete-account" aria-labelledby="delete-heading">
+		<h2 id="delete-heading">מחיקת החשבון</h2>
+		<p>מחיקה קבועה של חשבון הכניסה, הפרופיל ופרטי הקשר, כל המודעות שלכם, בקשות הקשר שבהן השתתפתם, הדיווחים ששלחתם ורישום אישור המסמכים. הפעולה אינה ניתנת לביטול.</p>
+		<p>חשבון Google שלכם לא יימחק. מידע שאחרים כבר העתיקו לא ניתן למחוק אצלם, וגיבויים ורישומים טכניים כפופים לתקופות השמירה של הספקים. <a class="text-link" href={resolve('/privacy')}>פרטים במדיניות הפרטיות</a>.</p>
+		<form method="POST" action="?/deleteAccount" use:enhance={() => {
+			deleting = true;
+			return async ({ update }) => {
+				await update();
+				deleting = false;
+			};
+		}}>
+			<label class="delete-confirmation"><input type="checkbox" name="confirm_delete" value="delete" required /><span>אני מבין/ה שהמחיקה קבועה ומבקש/ת למחוק את החשבון והמידע שלי.</span></label>
+			<button type="submit" class="button button-danger" disabled={deleting}><Trash2 size={16} />{deleting ? 'מוחקים…' : 'מחיקה קבועה של החשבון'}</button>
+		</form>
+	</section>
 </div>
+
+<style>
+	.legal-update { margin-bottom: 24px; }
+	.delete-account { border-top: 1px solid var(--border, #deded4); padding-top: 25px; }
+	.delete-account p { font-size: 13px; line-height: 1.8; color: var(--muted, #6b7066); }
+	.delete-confirmation { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; line-height: 1.7; margin: 18px 0; }
+	.delete-confirmation input { width: 18px; height: 18px; min-height: 18px; flex: 0 0 18px; margin-top: 4px; }
+</style>

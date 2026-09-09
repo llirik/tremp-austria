@@ -105,9 +105,9 @@ export function validatePublicText(value: string): string | null {
 	if (
 		/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(value) ||
 		/(?:\+?\d[\s().-]*){7,}/.test(value) ||
-		/(?:https?:\/\/|www\.|wa\.me\/|t\.me\/)/i.test(value)
+		/(?:https?:\/\/|www\.|wa\.me|t\.me|mailto:|tel:)/i.test(value)
 	) {
-		return 'פרטי קשר וקישורים נשארים פרטיים. יש להסיר אותם מהטקסט הציבורי.';
+		return 'כדי לשמור על הפרטיות, הסירו טלפונים, אימיילים וקישורים מהטקסט הציבורי. פרטי קשר משתפים דרך בקשת הקשר המוגנת, לאחר אישור.';
 	}
 	return null;
 }
