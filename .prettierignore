@@ -1,0 +1,7 @@
+node_modules
+.svelte-kit
+.vercel
+pnpm-lock.yaml
+output
+test-results
+playwright-report
