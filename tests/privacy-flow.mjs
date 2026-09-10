@@ -328,7 +328,9 @@ try {
 		for (const legalPath of ['/about', '/privacy', '/terms', '/impressum']) await expect(anonPage.locator(`footer a[href="${legalPath}"]`)).toBeVisible();
 	}
 	await expect(anonPage.locator('main')).toContainText('Kirill Vodopianov');
-	await expect(anonPage.locator('main')).toContainText('Reith bei Kitzbühel, Austria');
+	await expect(anonPage.locator('main')).toContainText('Kaiserstraße 63');
+	await expect(anonPage.locator('main')).toContainText('6370 Reith bei Kitzbühel');
+	await expect(anonPage.locator('main')).toContainText('Austria');
 	await expect(anonPage.locator('main')).toContainText('tremp.austria@gmail.com');
 	await screenshot(anonPage, 'impressum-430');
 	checked('Legal pages and footer are public, Hebrew RTL and mobile-safe');

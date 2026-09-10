@@ -1,6 +1,6 @@
 # Community service operations
 
-Operator / media owner / data controller: **Kirill Vodopianov** · **Reith bei Kitzbühel, Austria** · **tremp.austria@gmail.com**.
+Operator / media owner / data controller: **Kirill Vodopianov** · **Kaiserstraße 63** · **6370 Reith bei Kitzbühel** · **Austria** · **tremp.austria@gmail.com**.
 
 Use the exact mailbox above for legal/privacy requests. Verify delivery and monitor it. Google is the active login provider; email login remains disabled. No transactional-email provider or automatic report email is configured.
 
@@ -99,4 +99,4 @@ Routine self-service deletion removes the user's Auth account, profile, private 
 
 Current Terms and Privacy versions are both `2026-09-09`. For material changes, update the texts and `src/lib/legal.ts`, then add a migration changing both legal-acceptance RPC version checks. Users receive an unchecked acknowledgment before affected coordination writes; safety reports, deletion and existing profile/contact corrections remain available without accepting revised terms.
 
-Keep Google scopes to identity/profile/email. Store its client secret only in Supabase provider settings. Verify actual provider agreement records, subprocessors and international-processing safeguards, and check any account-level Vercel telemetry settings independently of the source audit. No analytics/tracking SDK should be introduced without a separate deliberate review. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records the remaining Austrian notice/address and provider-contract questions.
+Keep Google scopes to identity/profile/email. Store its client secret only in Supabase provider settings. Verify actual provider agreement records, subprocessors and international-processing safeguards, and check any account-level Vercel telemetry settings independently of the source audit. No analytics/tracking SDK should be introduced without a separate deliberate review. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records the supplied postal address and remaining Austrian notice and provider-contract questions.

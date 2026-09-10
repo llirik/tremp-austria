@@ -2,21 +2,23 @@
 
 Reviewed 9 September 2026. This is an engineering record of the implemented notice, service boundaries and unresolved legal questions; it is not an Austrian legal opinion or a guarantee of compliance.
 
+Operator address updated 10 September 2026 using the full postal address supplied and authorized for publication by the operator, whose instruction cited WKO Tirol guidance requiring a ladungsfähige postalische Anschrift. The underlying correspondence has not been reviewed.
+
 ## Operator supplied for publication
 
 - Operator, media owner and data controller: **Kirill Vodopianov**.
-- Residence / Gemeinde: **Reith bei Kitzbühel, Austria**.
+- Postal address: **Kaiserstraße 63, 6370 Reith bei Kitzbühel, Austria**.
 - Legal and privacy contact: **tremp.austria@gmail.com**.
 
-The final, explicit address in the operator's request governs an earlier spelling variation. No street, house number, private telephone number, company number or tax registration has been inferred or published. The operator should verify that this exact mailbox exists, receives mail and is monitored; application code cannot establish that.
+The supplied full postal address replaces the earlier Gemeinde-only notice. No private telephone number, company number or tax registration has been inferred or published. The operator should verify that this exact mailbox exists, receives mail and is monitored; application code cannot establish that.
 
-## Why the notice uses the Gemeinde
+## Published address and notice classification
 
-The media-owner disclosure in [Mediengesetz § 25](https://ris.bka.gv.at/eli/bgbl/1981/314/P25/NOR40134353) uses the owner's name and place of residence or seat. Its reduced disclosure rule in paragraph 5 depends on the medium's content and capacity to influence public opinion. It is **not** a general exemption for every free website. The new Impressum identifies the individual owner, residence, purpose and basic direction of this community board without assuming a corporate form. The [current consolidated Mediengesetz](https://www.ris.bka.gv.at/geltendefassung.wxe?abfrage=bundesnormen&gesetzesnummer=10000719) also contains § 25a, effective from May 2026, for qualifying media-service providers; its applicability must not be inferred merely from operating a website.
+The media-owner disclosure in [Mediengesetz § 25](https://ris.bka.gv.at/eli/bgbl/1981/314/P25/NOR40134353) uses the owner's name and place of residence or seat. Its reduced disclosure rule in paragraph 5 depends on the medium's content and capacity to influence public opinion. It is **not** a general exemption for every free website. The Impressum identifies the individual owner, full postal address, purpose and basic direction of this community board without assuming a corporate form. The [current consolidated Mediengesetz](https://www.ris.bka.gv.at/geltendefassung.wxe?abfrage=bundesnormen&gesetzesnummer=10000719) also contains § 25a, effective from May 2026, for qualifying media-service providers; its applicability must not be inferred merely from operating a website.
 
 A different rule applies if this activity is an information-society service within [ECG § 3](https://ris.bka.gv.at/eli/bgbl/i/2001/152/P3/NOR40258259): [ECG § 5(1)(2)](https://ris.bka.gv.at/eli/bgbl/i/2001/152/P5/NOR40025801) then requires the geographic address where the provider is established. A Gemeinde alone would not meet that separate address requirement. “Free to the user” does not by itself settle the statutory economic-service classification.
 
-The supplied operating facts are that this board is free, non-commercial, volunteer operated and has no advertising, fares, commissions, paid priority or transportation payments. They support using the supplied residence without inventing a street address, but do not establish a binding exemption. Before broad sharing, an Austrian adviser should confirm the notice classification and whether any additional service-of-process address is required for this actual activity. If an applicable requirement is confirmed, obtain a lawful address from the operator rather than extracting or publishing a private address. Revisit this assessment if the operation, funding, editorial content or commercial use changes.
+The supplied operating facts are that this board is free, non-commercial, volunteer operated and has no advertising, fares, commissions, paid priority or transportation payments. Publishing the operator-supplied full postal address resolves the previously missing address detail; no further address is being requested or inferred. The operating facts do not establish a binding exemption from other notice obligations. Revisit the notice classification if the operation, funding, editorial content or commercial use changes.
 
 ## GDPR purposes and legal bases
 
@@ -55,4 +57,4 @@ The code audit found authentication/session cookies and no analytics, advertisin
 
 The UI and Terms describe a coordination board, not a carrier, taxi dispatcher, booking agent or paid transport service. They prohibit unlawful/unlicensed commercial passenger transport and make users responsible for checking licensing, insurance, vehicle safety and their direct arrangements. They do not decide whether a particular real trip or expense-sharing arrangement is lawful. Liability is limited only where applicable law permits, without overriding mandatory Austrian/EU rules.
 
-Remaining operational/legal decisions include the exact notice/address classification, the operator's provider agreements and transfer assessment, handling individual rights requests and abuse, and transport-law classification of actual use. Whether the Digital Services Act or further Austrian obligations apply must be assessed against the real operating model; a small user-report form alone is not a claim of DSA compliance. The project introduces no age collection or special children's flow; if use by children becomes intended, reassess the contract/privacy requirements before targeting them.
+Remaining operational/legal decisions include the applicable notice obligations, the operator's provider agreements and transfer assessment, handling individual rights requests and abuse, and transport-law classification of actual use. Whether the Digital Services Act or further Austrian obligations apply must be assessed against the real operating model; a small user-report form alone is not a claim of DSA compliance. The project introduces no age collection or special children's flow; if use by children becomes intended, reassess the contract/privacy requirements before targeting them.

@@ -8,7 +8,7 @@ This community board does not provide transport, employ drivers, dispatch taxis,
 
 **Deployment:** Vercel hosts the application; Supabase Auth and PostgreSQL use Frankfurt. Google OAuth is the active production sign-in method. Email sign-in is disabled; optional email support in the code must remain off until custom SMTP and a verified sender are configured. See [Supabase SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp). Apply all committed migrations and verify the retention job when deploying.
 
-**Operator / media owner / data controller:** Kirill Vodopianov · Reith bei Kitzbühel, Austria · [tremp.austria@gmail.com](mailto:tremp.austria@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
+**Operator / media owner / data controller:** Kirill Vodopianov · Kaiserstraße 63 · 6370 Reith bei Kitzbühel · Austria · [tremp.austria@gmail.com](mailto:tremp.austria@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
 
 ## Features
 
@@ -109,7 +109,7 @@ Public fields reject obvious emails, phone-like strings, links and unsupported c
 
 Sessions use server-managed HttpOnly cookies and Supabase `getUser()` verification. Google login uses PKCE and only identity/email/profile scopes. Public page data never serializes an Auth user, authentication email or account UUID. No analytics, advertising, tracking pixel or fingerprinting SDK is included; fonts are local. Account-level provider settings and technical logs are distinct from app tracking.
 
-The operator details are now published. The operator still needs to monitor the exact contact mailbox, review reports, verify retention job health and maintain applicable provider agreements and privacy-request handling. [Legal review notes](docs/LEGAL_REVIEW.md) explain the conditional Austrian notice/address assessment and questions that code cannot settle.
+The operator details are now published. The operator still needs to monitor the exact contact mailbox, review reports, verify retention job health and maintain applicable provider agreements and privacy-request handling. [Legal review notes](docs/LEGAL_REVIEW.md) record the supplied postal address and remaining legal questions that code cannot settle.
 
 ## Matching and lifecycle
 

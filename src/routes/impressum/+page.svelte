@@ -13,8 +13,10 @@
 		<p class="intro">לוח קהילתי חינמי, לא מסחרי, המופעל בהתנדבות.</p>
 		<h2>מפעיל, בעל המדיה והאחראי למידע האישי</h2>
 		<p>
-			<bdi>Kirill Vodopianov</bdi><br />
-			יישוב מגורים: <bdi>Reith bei Kitzbühel, Austria</bdi><br />
+			<bdi dir="ltr">Kirill Vodopianov</bdi><br />
+			<bdi dir="ltr">Kaiserstraße 63</bdi><br />
+			<bdi dir="ltr">6370 Reith bei Kitzbühel</bdi><br />
+			<bdi dir="ltr">Austria</bdi><br />
 			לפניות משפטיות ולנושאי פרטיות:
 			<a class="text-link" href="mailto:tremp.austria@gmail.com"><bdi>tremp.austria@gmail.com</bdi></a
 			>

@@ -16,8 +16,10 @@
 		<h2>מי אחראי למידע?</h2>
 		<p>
 			מפעיל המיזם והאחראי לעיבוד המידע האישי (Data Controller):<br />
-			<bdi>Kirill Vodopianov</bdi><br />
-			<bdi>Reith bei Kitzbühel, Austria</bdi><br />
+			<bdi dir="ltr">Kirill Vodopianov</bdi><br />
+			<bdi dir="ltr">Kaiserstraße 63</bdi><br />
+			<bdi dir="ltr">6370 Reith bei Kitzbühel</bdi><br />
+			<bdi dir="ltr">Austria</bdi><br />
 			לפניות פרטיות ומימוש זכויות:
 			<a class="text-link" href="mailto:tremp.austria@gmail.com"><bdi>tremp.austria@gmail.com</bdi></a
 			>

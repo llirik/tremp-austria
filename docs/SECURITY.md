@@ -21,7 +21,7 @@ Run `pnpm test:db` for 94 actual PostgreSQL authorization/retention checks, plus
 
 ## Operation and limitations
 
-Operator / media owner / data controller: **Kirill Vodopianov**, **Reith bei Kitzbühel, Austria**, **tremp.austria@gmail.com**. Public notices contain no street or private telephone number. [Operations](OPERATIONS.md) covers private report review, abuse handling, rights requests and checking the daily retention job.
+Operator / media owner / data controller: **Kirill Vodopianov**, **Kaiserstraße 63, 6370 Reith bei Kitzbühel, Austria**, **tremp.austria@gmail.com**. Public notices use the operator-supplied postal address and contain no private telephone number. [Operations](OPERATIONS.md) covers private report review, abuse handling, rights requests and checking the daily retention job.
 
 Protect Google Cloud, hosting and Supabase operator accounts. Google is the production login method; keep email login off unless custom SMTP is deliberately configured and tested. Review provider agreements, logs, backup retention and any account-level telemetry setting separately. No analytics/tracking SDK is present in application source.
 
