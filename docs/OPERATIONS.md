@@ -9,10 +9,10 @@ Use the exact mailbox above for legal/privacy requests. Verify delivery and moni
 **Cutover is on hold.** [Vercel](https://tremp-austria.vercel.app/) remains live production. The parallel [Cloudflare Workers Free candidate](https://tremp-austria.tremp-austria.workers.dev) is available for verification, but Vercel has not been retired and production Privacy still correctly names Vercel. Publishing a Cloudflare provider update and any associated acknowledgment/version decision are deferred until a safe cutover.
 
 - Cloudflare account: **Llirik@gmail.com's Account**, ID `1c677f9a2686b11457133df779540c28`; Worker **tremp-austria**.
-- Current source: official `@sveltejs/adapter-cloudflare`, Wrangler and `wrangler.jsonc`; static assets plus `nodejs_compat`. No D1, KV, R2 or Durable Objects were introduced.
+- Current source: both official hosting adapters share one application. Vercel is the default, configured for `nodejs24.x` in `fra1`; Cloudflare is explicit, using Wrangler, static assets and `nodejs_compat`. No D1, KV, R2 or Durable Objects were introduced.
 - Supabase Auth/PostgreSQL remain in Frankfurt, project `wzoxmvpumpnetbzzstqx`; API row cap remains 1000. No schema/RLS/retention migration is part of this hosting change.
 - Supabase Site URL remains `https://tremp-austria.vercel.app`. Both production-origin `/auth/callback` redirects are temporarily allowed. The candidate explicitly uses its Cloudflare origin; Google's redirect remains the Supabase `/auth/v1/callback`. Google scopes and branding are unchanged.
-- The Cloudflare GitHub app is installed for **llirik/tremp-austria** only. Native Workers Builds is **not connected**; no deployment API token was created. Automatic production deployment remains unconfigured pending a safe cutover. GitHub validation is separate from deployment.
+- The Cloudflare GitHub app is installed for **llirik/tremp-austria** only. Native Workers Builds is **not connected**; no deployment API token was created. Automatic Cloudflare deployment remains unconfigured pending a safe cutover. GitHub validation is separate from deployment.
 
 ### Workers Free CPU blocker
 
@@ -32,6 +32,19 @@ The CPU diagnostic used a separate temporary Worker with synthetic listings, no 
 
 The final security audit found no exact privileged-key values in 154 tracked/generated local files or 39 deployed JavaScript assets. Anonymous public smoke checks loaded no third-party resources and set no cookies. OAuth initiation used PKCE with Secure, HttpOnly, SameSite=Lax, host-only cookies; server cookie handling preserves these protections for the session. Supabase's redirect allowlist was read back with both candidate and Vercel callbacks, while Site URL remained Vercel.
 
+### Build targets and Vercel deployment
+
+`vite.config.ts` selects the adapter from the build-only `BUILD_TARGET` environment variable. An unset value defaults to `vercel`; `cloudflare` must be explicit, and unknown values are rejected. Both targets use the same application source; this choice does not change either deployment's runtime environment, URLs or Supabase settings.
+
+| Command                                | Build target                                                        |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `pnpm build` with `BUILD_TARGET` unset | Vercel                                                              |
+| `pnpm build:vercel`                    | Vercel, explicitly                                                  |
+| `pnpm build:cloudflare`                | Cloudflare, explicitly                                              |
+| `pnpm deploy:check` / `pnpm deploy`    | Wrangler invokes `pnpm build:cloudflare` before checking/publishing |
+
+The existing Vercel Git integration uses the project's `vite build` command, which selects Vercel with `BUILD_TARGET` unset. Local `pnpm build` does the same, and `pnpm build:vercel` explicitly selects it. The adapter remains configured for Node.js 24 in Frankfurt (`fra1`). After pushing to `main`, verify that Vercel reports the expected commit as ready on the production alias, then run the manual `Production smoke` workflow. It checks Vercel production and the Cloudflare candidate independently. The `Checks` workflow validates both build outputs without deploying to Cloudflare.
+
 ### Deploy the parallel candidate
 
 Use Node.js 24 and the pinned pnpm/Wrangler versions:
@@ -45,7 +58,7 @@ pnpm deploy:check
 pnpm deploy
 ```
 
-If needed, authenticate with `pnpm exec wrangler login`. `pnpm deploy` invokes Wrangler, and `build.command` runs `pnpm build` before deployment. The dry run also builds without publishing. These commands update the Cloudflare candidate, not the existing Vercel deployment. [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) must be recorded and tested before claiming future automatic deployment.
+If needed, authenticate with `pnpm exec wrangler login`. `pnpm deploy` invokes Wrangler, and `build.command` runs `pnpm build:cloudflare` before deployment. The dry run explicitly builds for Cloudflare without publishing. A preceding default Vercel build cannot be accidentally reused as Worker output. These commands update the Cloudflare candidate, not the existing Vercel deployment. [Workers Builds configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/) must be recorded and tested before claiming future automatic Cloudflare deployment.
 
 The six application bindings in `wrangler.jsonc` are public runtime configuration: `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `PUBLIC_SITE_URL`, `PUBLIC_DEMO_MODE=false`, `PUBLIC_GOOGLE_AUTH_ENABLED=true` and `PUBLIC_EMAIL_AUTH_ENABLED=false`. Review and redeploy configuration changes. The publishable key does not bypass RLS; the app needs no service-role key. Google secrets stay in Supabase. Any future private server binding must use a Cloudflare secret, for example `pnpm exec wrangler secret put SECRET_NAME` with interactive input, never `vars` or a `PUBLIC_` name. Tokens, `.env`, `.dev.vars` and CLI authentication state remain outside Git.
 
@@ -59,9 +72,9 @@ pnpm exec wrangler versions list
 pnpm exec wrangler rollback VERSION_ID
 ```
 
-Replace `VERSION_ID` with a verified working version of this Worker. [Rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) changes the Worker deployment; it does not restore Supabase data, Auth settings or external resources. Verify candidate browsing and login after rollback. Redeploy corrected source with `pnpm deploy`, which rebuilds its output.
+Replace `VERSION_ID` with a verified working version of this Worker. [Rollback](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/) changes the Worker deployment; it does not restore Supabase data, Auth settings or external resources. Verify candidate browsing and login after rollback. Redeploy corrected source with `pnpm deploy`, which explicitly rebuilds Cloudflare output.
 
-Vercel's working source/configuration is preserved at [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b). Rebuild that revision in an isolated checkout if the fallback needs redeployment; the current Cloudflare adapter cannot rebuild it. Vercel's automatic attempts to build the new adapter fail without replacing its existing working deployment, which was rechecked as HTTP 200. GitHub's validation workflow is green; those Vercel deployment checks are not. Keep the live Vercel project, production origin and Auth configuration until Cloudflare's suitability is established and cutover is explicitly completed. Never reset or seed production Supabase as a hosting rollback.
+The earlier working Vercel baseline is preserved at [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b) for historical recovery. The current source now selects Vercel by default, so normal redeployment no longer requires that historical checkout. Earlier automatic attempts using the Cloudflare-only adapter failed without replacing the working Vercel deployment. Keep the live Vercel project, production origin and Auth configuration until Cloudflare's suitability is established and cutover is explicitly completed. Never reset or seed production Supabase as a hosting rollback.
 
 The migration was requested for a clearer self-service hosting/data-processing contractual setup for this non-commercial EU project, without concluding that the previous Vercel setup was unlawful. [LEGAL_REVIEW.md](LEGAL_REVIEW.md) records the Cloudflare DPA reference and deferred disclosure decision.
 

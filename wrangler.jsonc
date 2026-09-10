@@ -13,7 +13,7 @@
 		"binding": "ASSETS"
 	},
 	"build": {
-		"command": "pnpm build"
+		"command": "pnpm build:cloudflare"
 	},
 	"observability": {
 		"enabled": false

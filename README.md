@@ -31,7 +31,7 @@ Screenshots use synthetic local demo listings. [View the desktop layout](docs/im
 
 ## Architecture
 
-SvelteKit and TypeScript provide server-rendered pages and form actions. The UI uses Svelte 5, Tailwind CSS 4, Lucide and a locally bundled Heebo font. Supabase provides PostgreSQL and Auth. The current source uses the official Cloudflare adapter with Workers static assets and `nodejs_compat`; it does not rebuild the existing Vercel deployment. That working deployment uses the Vercel configuration preserved at [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b), targeting Node.js 24 in Frankfurt (`fra1`). There is no separate backend service or new Cloudflare database/storage service.
+SvelteKit and TypeScript provide server-rendered pages and form actions. The UI uses Svelte 5, Tailwind CSS 4, Lucide and a locally bundled Heebo font. Supabase provides PostgreSQL and Auth. One application source supports both official hosting adapters: Vercel is the default build target, using Node.js 24 in Frankfurt (`fra1`); an explicit Cloudflare build uses Workers static assets and `nodejs_compat`. There is no separate backend service or new Cloudflare database/storage service.
 
 ```text
 Browser → SvelteKit loads/form actions → Supabase Auth + PostgreSQL
@@ -93,6 +93,8 @@ The application never needs a service-role key. Keep Google client secrets, data
 
 The Cloudflare candidate's public runtime values are in `wrangler.jsonc`, including its own `PUBLIC_SITE_URL`. These values do not change Vercel's environment or Supabase's Site URL. Any future private Cloudflare binding must use a protected secret rather than `vars` or a `PUBLIC_` name.
 
+`BUILD_TARGET` selects the build adapter only. Unset means `vercel`; `cloudflare` must be explicit, and unknown values fail the build. This setting does not change application URLs, authentication settings or database behavior.
+
 Production does **not** substitute demo data when configuration or database access fails. Keep `PUBLIC_DEMO_MODE=false`; an empty production board means nobody has posted yet.
 
 ## Privacy and authorization
@@ -134,8 +136,10 @@ pnpm check       # Svelte/TypeScript
 pnpm lint        # ESLint
 pnpm test        # Matching, validation, redirects and auth-boundary unit tests
 pnpm test:db     # Actual PostgreSQL grants, RLS, RPC and constraint checks via PGlite
-pnpm build      # Production build
-pnpm deploy:check # Wrangler candidate build/deployment dry run
+pnpm build      # Vercel build by default (BUILD_TARGET unset)
+pnpm build:vercel # Explicit Vercel build
+pnpm build:cloudflare # Explicit Cloudflare candidate build
+pnpm deploy:check # Wrangler dry run; rebuilds for Cloudflare
 pnpm validate   # Typecheck, lint, unit/RLS tests and build; also runs in GitHub Actions
 ```
 
@@ -157,7 +161,9 @@ supabase db push
 
 Never pass `--include-seed` or run the local seed against production. Add future changes as new migrations so deployed databases can upgrade reproducibly.
 
-The current source targets Cloudflare Workers. For a fork, select its own Worker name/account and public configuration in `wrangler.jsonc`; do not deploy to this project's account or production database. Assess the Workers Free CPU limit against the actual workload before treating a deployment as production-ready.
+For Vercel, use `pnpm build` with `BUILD_TARGET` unset, or `pnpm build:vercel`, and configure the fork's production environment. Both adapters use the same application source; no historical checkout is needed for a normal Vercel build.
+
+For an explicit Cloudflare deployment, select the fork's own Worker name/account and public configuration in `wrangler.jsonc`; do not deploy to this project's account or production database. Assess the Workers Free CPU limit against the actual workload before treating a deployment as production-ready.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -167,7 +173,7 @@ pnpm deploy:check
 pnpm deploy
 ```
 
-`pnpm deploy` runs Wrangler, whose committed `build.command` invokes `pnpm build` before uploading the candidate. `pnpm deploy:check` builds and validates without publishing. Native Workers Builds is not yet connected, so main-branch production deployment is not configured. To rebuild the existing Vercel fallback, use the preserved [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b) configuration in an isolated checkout; do not deploy the Cloudflare adapter to the live Vercel project. See [OPERATIONS.md](docs/OPERATIONS.md) for rollback and migration status.
+`pnpm deploy` runs Wrangler, whose committed `build.command` invokes `pnpm build:cloudflare` before uploading the candidate. `pnpm deploy:check` uses the same explicit target without publishing, so a previous default Vercel build cannot supply stale Worker output. Native Workers Builds is not connected; automatic Cloudflare deployment is not configured. Vercel remains the production target. The earlier fallback baseline [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b) remains in history for recovery. See [OPERATIONS.md](docs/OPERATIONS.md) for deployment verification, rollback and migration status.
 
 Set Supabase Auth's Site URL to the canonical app origin and permit `/auth/callback` redirects including the `next` query string. Preview deployments should use a separate test backend and an intentionally permitted callback origin.
 

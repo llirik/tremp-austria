@@ -5,10 +5,19 @@ permissions:
   contents: read
 jobs:
   public-smoke:
+    name: Public smoke (${{ matrix.host }})
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: vercel-production
+            url: https://tremp-austria.vercel.app
+          - host: cloudflare-candidate
+            url: https://tremp-austria.tremp-austria.workers.dev
     env:
-      TEST_BASE_URL: https://tremp-austria.tremp-austria.workers.dev
+      TEST_BASE_URL: ${{ matrix.url }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,7 +34,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: production-smoke-results
+          name: production-smoke-results-${{ matrix.host }}
           path: |
             test-results/hosted/
             output/playwright/mobile-filters-*.png

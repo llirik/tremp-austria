@@ -1,7 +1,14 @@
-import adapter from '@sveltejs/adapter-cloudflare';
+import cloudflare from '@sveltejs/adapter-cloudflare';
+import vercel from '@sveltejs/adapter-vercel';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+
+// Vercel remains production. Cloudflare must be selected explicitly by its build script.
+const buildTarget = process.env.BUILD_TARGET ?? 'vercel';
+if (buildTarget !== 'vercel' && buildTarget !== 'cloudflare') {
+	throw new Error(`Unsupported BUILD_TARGET: ${buildTarget}. Use vercel or cloudflare.`);
+}
 
 export default defineConfig({
 	plugins: [
@@ -13,7 +20,10 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			adapter: adapter()
+			adapter:
+				buildTarget === 'cloudflare'
+					? cloudflare()
+					: vercel({ runtime: 'nodejs24.x', regions: ['fra1'] })
 		})
 	]
 });

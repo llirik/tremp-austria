@@ -17,6 +17,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate
+      - name: Verify default Vercel output
+        run: test -f .vercel/output/config.json
+      - name: Validate explicit Cloudflare build without deploying
+        run: pnpm deploy:check
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+      - name: Verify Cloudflare Worker output
+        run: test -f .svelte-kit/cloudflare/_worker.js
       - name: Exclude unused Chrome package source
         run: |
           # Playwright downloads its own Chromium. A broken runner Chrome APT
