@@ -1,0 +1,32 @@
+name: Production smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TEST_BASE_URL: https://tremp-austria.tremp-austria.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Download Playwright's browser without using the runner's Chrome APT source.
+      - run: pnpm exec playwright install chromium
+      - run: pnpm exec playwright test --config playwright.hosted.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-smoke-results
+          path: |
+            test-results/hosted/
+            output/playwright/mobile-filters-*.png
+          retention-days: 7

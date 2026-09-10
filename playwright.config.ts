@@ -22,17 +22,29 @@ export default defineConfig({
 	projects: [
 		{
 			name: 'mobile-390',
-			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
+			testIgnore: [
+				'**/mobile-filters.spec.ts',
+				'**/account-contact.spec.ts',
+				'**/hosted-public.spec.ts'
+			],
 			use: { viewport: { width: 390, height: 844 } }
 		},
 		{
 			name: 'mobile-430',
-			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
+			testIgnore: [
+				'**/mobile-filters.spec.ts',
+				'**/account-contact.spec.ts',
+				'**/hosted-public.spec.ts'
+			],
 			use: { viewport: { width: 430, height: 932 } }
 		},
 		{
 			name: 'desktop',
-			testIgnore: ['**/mobile-filters.spec.ts', '**/account-contact.spec.ts'],
+			testIgnore: [
+				'**/mobile-filters.spec.ts',
+				'**/account-contact.spec.ts',
+				'**/hosted-public.spec.ts'
+			],
 			use: { viewport: { width: 1440, height: 900 } }
 		},
 		{
