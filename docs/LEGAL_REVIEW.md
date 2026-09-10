@@ -41,6 +41,24 @@ Primary provider references reviewed:
 
 These public documents describe provider arrangements; reading them does not prove the precise contractual version, customer details, subprocessor scope or transfer assessment for this operator's accounts. The operator should retain applicable provider agreement records and confirm the actual transfers and safeguards, making additional information available to users on request. Frankfurt hosting is not a promise that all processing remains in the EU. Provider-controlled logs and backups follow provider retention and deletion processes; the app cannot instantly purge them or assign an invented duration.
 
+## Parallel Cloudflare candidate and DPA record
+
+On 10 September 2026, [Cloudflare Workers Free](https://tremp-austria.tremp-austria.workers.dev) is a parallel migration candidate. Vercel remains the live production host and has not been retired. Cutover is held because observed server-rendering CPU use exceeds Free's nominal 10 ms request budget; [OPERATIONS.md](OPERATIONS.md) records the diagnostic limits and verification status. Successful test responses do not establish sustained hosting suitability.
+
+The requested migration seeks a clearer self-service hosting/data-processing contractual setup for this non-commercial EU service. It does not establish that the prior Vercel setup was unlawful. Supabase Frankfurt and Google OAuth remain unchanged. If cutover becomes safe, Cloudflare will be described conservatively as application hosting/edge infrastructure, without claiming exclusively EU processing. The production Privacy provider update is deferred; current Terms/Privacy acknowledgment versions remain `2026-09-09`, and no historical acceptance record or timestamp is changed.
+
+| Field                           | Official reference checked for the self-service candidate                      |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| Provider                        | Cloudflare, Inc.                                                               |
+| Document title                  | Cloudflare Data Processing Addendum                                            |
+| Official URL                    | [Cloudflare Customer DPA](https://www.cloudflare.com/cloudflare-customer-dpa/) |
+| Explicit version/effective date | Version 6.4, effective April 3, 2026                                           |
+| Date checked                    | 10 September 2026                                                              |
+
+The [Self-Serve Subscription Agreement](https://www.cloudflare.com/terms/) (last updated September 12, 2025) covers Free Services in section 2.6 and incorporates the DPA for covered personal data in section 6.1. Cloudflare's [GDPR FAQ for self-service customers](https://www.cloudflare.com/trust-hub/gdpr/) says no additional action is needed for the transfer mechanisms incorporated through its standard self-service DPA. These public references do not evidence a separate mandatory DPA-signing step. They do not verify this account's contracting identity, acceptance history or any account-specific override; the operator should retain the applicable account agreement records and resolve any discrepancy with Cloudflare. [Cloudflare's Privacy Policy](https://www.cloudflare.com/privacypolicy/) distinguishes processing on customers' behalf from its own processing of certain service information.
+
+A future provider-only disclosure can be separated from the application's required acknowledgment edition where purposes, legal bases, data categories, visibility, retention and rights remain unchanged. That is not a new consent basis or proof that historical acceptance covers awareness of a later provider. The [EDPB transparency guidance](https://www.edpb.europa.eu/system/files/2023-09/wp260rev01_en.pdf) calls for effective notification of material changes; appropriate communication and timing must be assessed at cutover. No new provider notice, reacceptance prompt or completed migration is claimed at this checkpoint.
+
 ## Retention, deletion and reports
 
 Migrations `202609090003_privacy_controls.sql` and `202609090004_retention_schedule.sql` implement the policy. Eligible expired/cancelled rides are deleted 90 days after the applicable event, with dependent contact requests and reports removed through foreign-key cascades. Cancellation uses the earlier of the first cancellation and departure time, preventing later edits from extending retention. Reports also expire 90 days after creation, including pending reports. The daily PostgreSQL job is `tremp-retention-daily` at 03:15 UTC. Deployments must verify that the job is installed, active and executing; infrastructure pauses or failures require recovery and catch-up. Do not claim automatic cleanup on a deployment that only has the cleanup function.

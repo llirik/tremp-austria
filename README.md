@@ -8,6 +8,8 @@ This community board does not provide transport, employ drivers, dispatch taxis,
 
 **Deployment:** Vercel hosts the application; Supabase Auth and PostgreSQL use Frankfurt. Google OAuth is the active production sign-in method. Email sign-in is disabled; optional email support in the code must remain off until custom SMTP and a verified sender are configured. See [Supabase SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp). Apply all committed migrations and verify the retention job when deploying.
 
+**Migration checkpoint — 10 September 2026:** a parallel [Cloudflare Workers Free candidate](https://tremp-austria.tremp-austria.workers.dev) is deployed, but cutover is on hold because measured server-rendering CPU time exceeds Free's nominal 10 ms limit. Successful functional tests do not establish sustained capacity. Vercel remains live production, and Supabase's Site URL remains Vercel. [OPERATIONS.md](docs/OPERATIONS.md) records the evidence, candidate deployment procedure and remaining work.
+
 **Operator / media owner / data controller:** Kirill Vodopianov · Kaiserstraße 63 · 6370 Reith bei Kitzbühel · Austria · [tremp.austria@gmail.com](mailto:tremp.austria@gmail.com). Public notices: [About](https://tremp-austria.vercel.app/about), [Privacy](https://tremp-austria.vercel.app/privacy), [Terms](https://tremp-austria.vercel.app/terms), [Impressum](https://tremp-austria.vercel.app/impressum).
 
 ## Features
@@ -29,7 +31,7 @@ Screenshots use synthetic local demo listings. [View the desktop layout](docs/im
 
 ## Architecture
 
-SvelteKit and TypeScript provide server-rendered pages and form actions. The UI uses Svelte 5, Tailwind CSS 4, Lucide and a locally bundled Heebo font. Supabase provides PostgreSQL and Auth. The Vercel adapter targets Node.js 24 in Frankfurt (`fra1`); there is no separate backend service.
+SvelteKit and TypeScript provide server-rendered pages and form actions. The UI uses Svelte 5, Tailwind CSS 4, Lucide and a locally bundled Heebo font. Supabase provides PostgreSQL and Auth. The current source uses the official Cloudflare adapter with Workers static assets and `nodejs_compat`; it does not rebuild the existing Vercel deployment. That working deployment uses the Vercel configuration preserved at [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b), targeting Node.js 24 in Frankfurt (`fra1`). There is no separate backend service or new Cloudflare database/storage service.
 
 ```text
 Browser → SvelteKit loads/form actions → Supabase Auth + PostgreSQL
@@ -89,6 +91,8 @@ Seed data covers both directions, all listing types, potential matches, full veh
 
 The application never needs a service-role key. Keep Google client secrets, database passwords, management tokens and SMTP credentials out of the repository and every `PUBLIC_` variable. `.env` and provider CLI state are ignored by Git. Google client secrets belong only in Supabase's provider settings.
 
+The Cloudflare candidate's public runtime values are in `wrangler.jsonc`, including its own `PUBLIC_SITE_URL`. These values do not change Vercel's environment or Supabase's Site URL. Any future private Cloudflare binding must use a protected secret rather than `vars` or a `PUBLIC_` name.
+
 Production does **not** substitute demo data when configuration or database access fails. Keep `PUBLIC_DEMO_MODE=false`; an empty production board means nobody has posted yet.
 
 ## Privacy and authorization
@@ -131,7 +135,8 @@ pnpm lint        # ESLint
 pnpm test        # Matching, validation, redirects and auth-boundary unit tests
 pnpm test:db     # Actual PostgreSQL grants, RLS, RPC and constraint checks via PGlite
 pnpm build      # Production build
-pnpm validate   # All five checks above; also runs in GitHub Actions
+pnpm deploy:check # Wrangler candidate build/deployment dry run
+pnpm validate   # Typecheck, lint, unit/RLS tests and build; also runs in GitHub Actions
 ```
 
 The database harness applies every migration and the seed to a fresh PostgreSQL engine. It supplies Supabase's Auth role/identity primitives and exercises the actual policies. Its 94 checks cover public projections, impersonation, immutable ownership, contact authorization/revocation, acceptance enforcement, report privacy, self-deletion, retention and persistent rate limits. No hosted credentials or Docker daemon are needed.
@@ -152,7 +157,17 @@ supabase db push
 
 Never pass `--include-seed` or run the local seed against production. Add future changes as new migrations so deployed databases can upgrade reproducibly.
 
-Import the GitHub repository into Vercel with the SvelteKit preset, Node.js 24, `pnpm install --frozen-lockfile` and `pnpm build`. The adapter is already configured; do not override the static output directory. Set the environment variables above and redeploy after changing them.
+The current source targets Cloudflare Workers. For a fork, select its own Worker name/account and public configuration in `wrangler.jsonc`; do not deploy to this project's account or production database. Assess the Workers Free CPU limit against the actual workload before treating a deployment as production-ready.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm exec wrangler login
+pnpm validate
+pnpm deploy:check
+pnpm deploy
+```
+
+`pnpm deploy` runs Wrangler, whose committed `build.command` invokes `pnpm build` before uploading the candidate. `pnpm deploy:check` builds and validates without publishing. Native Workers Builds is not yet connected, so main-branch production deployment is not configured. To rebuild the existing Vercel fallback, use the preserved [`6ff875b`](https://github.com/llirik/tremp-austria/commit/6ff875b) configuration in an isolated checkout; do not deploy the Cloudflare adapter to the live Vercel project. See [OPERATIONS.md](docs/OPERATIONS.md) for rollback and migration status.
 
 Set Supabase Auth's Site URL to the canonical app origin and permit `/auth/callback` redirects including the `next` query string. Preview deployments should use a separate test backend and an intentionally permitted callback origin.
 
