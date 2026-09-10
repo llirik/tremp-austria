@@ -32,30 +32,36 @@ export interface Ride extends RideInput {
 	updated_at?: string;
 }
 
+// Reuse fixed-locale formatters; constructing ICU formatters for every card and
+// candidate pair is expensive in the Workers CPU budget. No date values are cached.
+const localDateFormatter = new Intl.DateTimeFormat('en-CA', {
+	timeZone: TIME_ZONE,
+	year: 'numeric',
+	month: '2-digit',
+	day: '2-digit'
+});
+const localTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+	timeZone: TIME_ZONE,
+	hour: '2-digit',
+	minute: '2-digit',
+	hourCycle: 'h23'
+});
+const dateLabelFormatter = new Intl.DateTimeFormat('he-IL', {
+	timeZone: TIME_ZONE,
+	weekday: 'long',
+	day: 'numeric',
+	month: 'long'
+});
+
 export function localDate(value: string | Date = new Date()): string {
-	return new Intl.DateTimeFormat('en-CA', {
-		timeZone: TIME_ZONE,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit'
-	}).format(new Date(value));
+	return localDateFormatter.format(new Date(value));
 }
 export function localTime(value: string | Date = new Date()): string {
-	return new Intl.DateTimeFormat('en-GB', {
-		timeZone: TIME_ZONE,
-		hour: '2-digit',
-		minute: '2-digit',
-		hourCycle: 'h23'
-	}).format(new Date(value));
+	return localTimeFormatter.format(new Date(value));
 }
 export const timeLabel = localTime;
 export function dateLabel(value: string | Date): string {
-	return new Intl.DateTimeFormat('he-IL', {
-		timeZone: TIME_ZONE,
-		weekday: 'long',
-		day: 'numeric',
-		month: 'long'
-	}).format(new Date(value));
+	return dateLabelFormatter.format(new Date(value));
 }
 export function flexibilityLabel(minutes: number | null): string {
 	return minutes === null

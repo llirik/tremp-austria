@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
 	addDays,
+	dateLabel,
 	isPotentialMatch,
 	localDate,
 	localDeparture,
+	localTime,
 	parseRide,
 	safeNext,
 	validatePublicText,
@@ -74,6 +76,37 @@ describe('potential matches', () => {
 	});
 });
 describe('Vienna date/time', () => {
+	it.each([
+		['2025-12-31T22:30:00Z', '2025-12-31', '23:30', 'יום רביעי, 31 בדצמבר'],
+		['2025-12-31T23:30:00Z', '2026-01-01', '00:30', 'יום חמישי, 1 בינואר'],
+		['2026-03-29T00:30:00Z', '2026-03-29', '01:30', 'יום ראשון, 29 במרץ'],
+		['2026-03-29T01:30:00Z', '2026-03-29', '03:30', 'יום ראשון, 29 במרץ'],
+		['2026-10-25T00:30:00Z', '2026-10-25', '02:30', 'יום ראשון, 25 באוקטובר'],
+		['2026-10-25T01:30:00Z', '2026-10-25', '02:30', 'יום ראשון, 25 באוקטובר'],
+		['2026-06-01T22:30:00Z', '2026-06-02', '00:30', 'יום שלישי, 2 ביוני']
+	])(
+		'preserves date, time and Hebrew labels across midnight and DST: %s',
+		(instant, date, time, label) => {
+			for (const value of [instant, new Date(instant)]) {
+				expect(localDate(value)).toBe(date);
+				expect(localTime(value)).toBe(time);
+				expect(dateLabel(value)).toBe(label);
+			}
+		}
+	);
+	it('continues reading the current date/time after the shared formatters were initialized', () => {
+		vi.useFakeTimers();
+		try {
+			vi.setSystemTime(new Date('2025-12-31T22:59:00Z'));
+			expect(localDate()).toBe('2025-12-31');
+			expect(localTime()).toBe('23:59');
+			vi.setSystemTime(new Date('2025-12-31T23:01:00Z'));
+			expect(localDate()).toBe('2026-01-01');
+			expect(localTime()).toBe('00:01');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 	it('uses summer and winter offsets and calendar arithmetic', () => {
 		expect(localDeparture('2026-09-11', '10:00')).toBe('2026-09-11T08:00:00Z');
 		expect(localDeparture('2026-12-11', '10:00')).toBe('2026-12-11T09:00:00Z');

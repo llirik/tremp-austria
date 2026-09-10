@@ -2,6 +2,7 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "tremp-austria",
+	"account_id": "1c677f9a2686b11457133df779540c28",
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2026-09-08",
 	"compatibility_flags": ["nodejs_compat"],

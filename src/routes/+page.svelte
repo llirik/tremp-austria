@@ -19,7 +19,7 @@
 		Plus
 	} from '@lucide/svelte';
 	import RideCard from '$lib/components/RideCard.svelte';
-	import { localDate, addDays, potentialMatches } from '$lib/domain';
+	import { localDate, addDays, isPotentialMatch } from '$lib/domain';
 	let { data } = $props();
 	let direction = $state('all');
 	let rideType = $state('all');
@@ -122,7 +122,7 @@
 			{#if filtered.length}<div class="ride-list">
 					{#each filtered as ride (ride.id)}<RideCard
 							{ride}
-							matched={potentialMatches(ride, data.rides).length > 0}
+							matched={data.rides.some((candidate) => isPotentialMatch(ride, candidate))}
 						/>{/each}
 				</div>{:else}<div class="empty-state">
 					<span class="empty-icon"><SearchX size={27} /></span>
