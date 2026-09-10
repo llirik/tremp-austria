@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { chromium, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
+import { expectContactRows } from './helpers/contact-layout.mjs';
 
 // Run against an already-started application and migrated Supabase test instance.
 // Secrets are environment-only. The privileged client creates/verifies/removes
@@ -292,6 +293,43 @@ async function exerciseContactDrafts(actor) {
 	await mobile(page);
 }
 
+async function exerciseContactLayout(actor) {
+	const { page } = actor;
+	const originalViewport = page.viewportSize();
+	const drafts = { telegram: '@layout_draft_fixture', email: actor.contact, whatsapp: '+43 660 1234567' };
+	for (const width of [320, 360, 390, 430]) {
+		for (const scale of [1, 1.5, 2]) {
+			await page.setViewportSize({ width, height: 1000 });
+			await visit(page, '/account');
+			await page.evaluate(() => document.fonts.ready);
+			const select = page.locator('select[name="method"]');
+			const input = page.locator('input[name="value"]');
+			const grid = select.locator('..');
+			const baseline = await select.evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+			// Fixed viewport + enlarged text metrics, matching the local regression
+			// suite. This is reflow stress, not an exact mobile OS font emulation.
+			await grid.evaluate((element, factor) => {
+				const nodes = [element, ...element.querySelectorAll('*')];
+				const sizes = nodes.map((node) => parseFloat(getComputedStyle(node).fontSize));
+				nodes.forEach((node, index) => { node.style.fontSize = `${sizes[index] * factor}px`; });
+			}, scale);
+			assert.ok(Math.abs(await select.evaluate((node) => parseFloat(getComputedStyle(node).fontSize)) - baseline * scale) < 0.02, 'Contact text scale was not applied');
+			for (const [method, draft] of Object.entries(drafts)) {
+				await select.selectOption(method);
+				await input.fill(draft);
+				await expectContactRows(page);
+				await grid.screenshot({ path: `${artifactDirectory}/privacy-contact-${method}-${width}-${scale * 100}.png` });
+			}
+			for (const [method, draft] of Object.entries(drafts)) {
+				await select.selectOption(method);
+				await expect(input).toHaveValue(draft);
+			}
+		}
+	}
+	await page.setViewportSize(originalViewport);
+	checked('Authenticated contact controls align and preserve drafts across 36 method/width/text-scale combinations');
+}
+
 async function deleteThroughUi(actor, survivor) {
 	const { page } = actor;
 	await visit(page, '/account');
@@ -344,6 +382,8 @@ try {
 	checked('Two mobile profiles explicitly accept current document versions');
 	stage = 'private contact draft handling';
 	await exerciseContactDrafts(owner);
+	stage = 'authenticated mobile contact layout';
+	await exerciseContactLayout(owner);
 
 	stage = 'ride creation';
 	await visit(owner.page, '/new');
@@ -366,6 +406,45 @@ try {
 	const rideId = new URL(owner.page.url()).pathname.split('/').at(-1);
 	assert.match(rideId, /^[0-9a-f-]{36}$/);
 	checked('An accepted account creates a listing through the mobile UI');
+
+	stage = 'matching and public board filters';
+	await visit(requester.page, '/new');
+	await requester.page.locator('label.form-type-option').filter({ has: requester.page.locator('input[value="passenger"]') }).click();
+	await requester.page.locator('[name="departure_date"]').fill(date);
+	await requester.page.locator('[name="departure_time"]').fill('10:45');
+	await requester.page.locator('[name="origin_area"]').fill('מרכז וינה');
+	await requester.page.locator('[name="destination_area"]').fill('שדה התעופה ברטיסלבה');
+	await requester.page.locator('[name="passenger_count"]').selectOption('2');
+	await requester.page.locator('[name="note"]').fill('בדיקה זמנית של התאמה קהילתית.');
+	await requester.page.getByRole('button', { name: 'פרסום הנסיעה', exact: true }).click();
+	await requester.page.waitForURL(/\/ride\/[0-9a-f-]+$/);
+	const matchingRideId = new URL(requester.page.url()).pathname.split('/').at(-1);
+	assert.match(matchingRideId, /^[0-9a-f-]{36}$/);
+	await expect(requester.page.locator(`.matches-section a.ride-card-body[href="/ride/${rideId}"]`)).toBeVisible();
+	await visit(owner.page, `/ride/${rideId}`);
+	await expect(owner.page.locator(`.matches-section a.ride-card-body[href="/ride/${matchingRideId}"]`)).toBeVisible();
+	checked('Compatible driver and passenger listings appear as matches in both real detail pages');
+	await visit(anonPage, '/');
+	const ownerCard = anonPage.locator(`a.ride-card-body[href="/ride/${rideId}"]`);
+	const requesterCard = anonPage.locator(`a.ride-card-body[href="/ride/${matchingRideId}"]`);
+	await expect(ownerCard).toBeVisible();
+	await expect(requesterCard).toBeVisible();
+	await anonPage.getByLabel('סינון לפי תאריך').fill(date);
+	await expect(ownerCard).toBeVisible();
+	await anonPage.getByRole('button', { name: 'מחפש טרמפ', exact: true }).click();
+	await expect(ownerCard).toHaveCount(0);
+	await expect(requesterCard).toBeVisible();
+	await anonPage.getByLabel('סינון לפי כיוון').selectOption('bts_to_vienna');
+	await expect(requesterCard).toHaveCount(0);
+	await anonPage.getByLabel('סינון לפי כיוון').selectOption('all');
+	await anonPage.getByRole('button', { name: 'כל הנסיעות', exact: true }).click();
+	await expect(ownerCard).toBeVisible();
+	await expect(requesterCard).toBeVisible();
+	await visit(anonPage, `/ride/${rideId}`);
+	const shareUrl = new URL(await anonPage.getByRole('link', { name: 'וואטסאפ', exact: true }).getAttribute('href'));
+	assert.equal(shareUrl.origin, 'https://wa.me');
+	assert.ok(shareUrl.searchParams.get('text')?.includes(`${base}/ride/${rideId}`), 'WhatsApp sharing points to another host');
+	checked('Live board date/type/direction filters work and WhatsApp sharing uses the current host');
 
 	stage = 'public/private data separation';
 	await visit(anonPage, `/ride/${rideId}`);
@@ -410,6 +489,20 @@ try {
 	assert.ok(reportAfterDeletion.error || reportAfterDeletion.data.length === 0, 'Deleted reporter left an authored report behind');
 	await visit(anonPage, `/ride/${rideId}`);
 	checked('An account without legal acceptance can delete itself; another account and listing survive');
+
+	stage = 'contact request rejection';
+	await visit(owner.page, `/ride/${matchingRideId}`);
+	await owner.page.getByRole('button', { name: 'בקשה ליצירת קשר', exact: true }).click();
+	await expect(owner.page.getByRole('heading', { name: 'בקשת הקשר בדרך' })).toBeVisible();
+	await visit(requester.page, '/account');
+	await requester.page.getByRole('button', { name: 'דחייה', exact: true }).click();
+	await expect(requester.page.getByRole('status')).toContainText('הבקשה נדחתה');
+	const rejected = assertSafeResult(await owner.client.rpc('get_my_contact_requests'), 'Rejected contact request query failed');
+	assert.equal(rejected.find((request) => request.ride_id === matchingRideId)?.status, 'rejected');
+	assert.deepEqual(assertSafeResult(await owner.client.from('private_contacts').select('value').eq('user_id', requester.id), 'Rejected contact isolation query failed'), []);
+	await visit(owner.page, '/account');
+	await expect(owner.page.locator('.private-contact')).toHaveCount(0);
+	checked('Rejecting a contact request records rejection and never reveals counterpart contact details');
 
 	stage = 'contact request and approval';
 	await visit(requester.page, `/ride/${rideId}`);
